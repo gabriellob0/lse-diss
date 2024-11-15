@@ -16,4 +16,8 @@ For 3 a 4, two ideas:
 IDEA:
 * Fixed effects if inventors with multiple patents
 
+## Data
+
+Currently, trying data from here: https://developer.uspto.gov/product/patent-assignment-economics-data-stata-dta-and-ms-excel-csv#product-files
+
 ## References
