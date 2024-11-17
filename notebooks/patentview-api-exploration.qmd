@@ -1,0 +1,45 @@
+I will use `httr2` to make requests.
+
+```{r}
+library(httr2)
+library(dplyr)
+library(tidyr)
+```
+
+You need to have a PatentsView API key; I stored mine in .Renviron file.
+
+```{r}
+api_key <- Sys.getenv("PATENTSVIEW_API_KEY")
+```
+
+```{r}
+req <- request("https://search.patentsview.org")
+```
+
+```{r}
+req
+```
+
+```{r}
+appended_req <- req |>
+  req_url_path("/api/v1/patent/") |>
+  req_headers("X-Api-Key" = api_key) |>
+  req_url_query(
+    q = '{"_gte":{"patent_date":"2024-01-01"}}',
+    f = '["patent_id", "patent_title", "patent_date", "inventors.inventor_name_last", "patent_abstract"]'
+  )
+```
+
+```{r}
+resp <- appended_req |>
+  req_progress() |>
+  req_perform() |>
+  resp_body_json()
+```
+
+
+```{r}
+patents <- resp |>
+  as_tibble() |>
+  unnest_wider(col = patents)
+```
