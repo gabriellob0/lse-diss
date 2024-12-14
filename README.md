@@ -3,18 +3,7 @@ Dissertation for the MSc in Economics at the LSE
 
 ## Overview
 
-IDEA:
-1. Download public patent data (possibly for a specific sector, most likely US only)
-2. Match names in patents to different ethnicities, I believe there are useful datasets for this freely available
-3. Extract some characteristic of these patents from abstract (e.g., skills)
-4. Match demographic characteristic from ethnicity to these patents
-
-For 3 a 4, two ideas:
-* Health inventions and prevalence of disease it cures
-* Skills used by patent (e.g., in software?) and prevalence of skills in other data (e.g., IPUMS)
-
-IDEA:
-* Fixed effects if inventors with multiple patents
+Analyse how localised knowledge spillovers are and how much this has changed (e.g., pre and post pandemic).
 
 ## Roadmap
 
@@ -22,7 +11,13 @@ Next, probably play with the API data and extract some stuff with NLP.
 
 ## Data
 
-Currently, trying data from here: https://developer.uspto.gov/product/patent-assignment-economics-data-stata-dta-and-ms-excel-csv#product-files
+Data from the USPTO API. The idea for sample construction right now is:
+1. Pick sample of patents (e.g., university asignees) plus originating year, mainly to make it computationally viable.
+2. Randomly select inventor of patent and assign geographic location (alternatively, use JTH method).
+3. Match inventor location to feature in US map.
+4. Restric the sample (e.g., remove no geographic data, self-cites, no assignee)
+5. Find nearest patent by semantic similarity between abstracts within a data range.
+6. Find distances between controls and citing patents to originating ones.
 
 also see: https://onlinelibrary.wiley.com/doi/10.1111/jems.12262
 
@@ -42,3 +37,4 @@ https://www.uspto.gov/sites/default/files/documents/oce-women-patentees-report.p
 
 https://www.journals.uchicago.edu/doi/full/10.1086/723636
 
+Keeping in EndNote for now.
