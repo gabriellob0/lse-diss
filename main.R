@@ -4,16 +4,25 @@ library(tidyr)
 
 api_fields <- c(
   "patent_id",
-  "patent_title",
   "patent_date",
-  "assignees.assignee_organization",
-  "assignees.assignee_type"
+  "inventors"
 )
 
-patents <- fetch_patents(fields = api_fields)
+patents <- get_patents(fields = api_fields)
 
-#saveRDS(patents, file = "data/raw/patents.rds")
+patents_tidy <- bind_rows(patents$patents) |>
+  unnest_wider(col = inventors) |>
+  mutate(inventor_id = basename(inventor))
 
-patents_tidy <- bind_rows(patents$patents)
+citing_patents <- get_citing_patents(unique(patents_tidy$patent_id))
 
-citations <- fetch_citations()
+citing_patents_tidy <- bind_rows(citing_patents$us_patent_citations)
+
+inventors <- get_inventors(inventors = unique(patents_tidy$inventor_id))
+
+inventors_tidy <- bind_rows(inventors$inventors) |>
+  mutate(location_id = basename(inventor_lastknown_location))
+
+locations <- get_locations(inventors_tidy$location_id)
+
+locations_tidy <- bind_rows(locations$locations)

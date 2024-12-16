@@ -21,9 +21,9 @@ Data from the USPTO API. The idea for sample construction right now is:
 
 also see: https://onlinelibrary.wiley.com/doi/10.1111/jems.12262
 
-This does not seem the right one, patent claim might be better: https://www.uspto.gov/ip-policy/economic-research/research-datasets/patent-claims-research-dataset
+Useful data dictionary from: https://patentsview.org/download/data-download-dictionary
 
-I managed to get the API to work, it seems like the way forward. I will extract patents according to some criteria and I think maybe have a row per inventor-patent pair.
+assignee_type = classification of assignee (1 - Unassigned, 2 - US Company or Corporation, 3 - Foreign Company or Corporation, 4 - US Individual, 5 - Foreign Individual, 6 - US Federal Government, 7 - Foreign Government, 8 - US County Government, 9 - US State Government. Note: A "1" appearing before any of these codes signifies part interest
 
 ## References
 
