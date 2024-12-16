@@ -2,6 +2,36 @@ library(httr2)
 library(jsonlite)
 library(checkmate)
 
+create_base_request <- function(endpoint, api_key) {
+  request("https://search.patentsview.org") |>
+    req_url_path(paste0("/api/v1/", endpoint, "/")) |>
+    req_headers("X-Api-Key" = api_key) |>
+    req_throttle(45 / 60)
+}
+
+add_query_params <- function(req, query, fields, sort = NULL, options = NULL) {
+  params <- list(
+    q = toJSON(query, auto_unbox = TRUE),
+    f = toJSON(fields, auto_unbox = TRUE)
+  )
+  
+  if (!is.null(sort)) {
+    params$s = toJSON(sort, auto_unbox = TRUE)
+  }
+  
+  if (!is.null(options)) {
+    params$o = toJSON(options, auto_unbox = TRUE)
+  }
+  
+  req_url_query(req, !!!params)
+}
+
+execute_request <- function(req) {
+  req |>
+    req_perform() |>
+    resp_body_json()
+}
+
 get_patents <- function(
     fields = c("patent_id", "patent_title", "patent_date"),
     start_date = "2023-01-01",
@@ -29,25 +59,20 @@ get_patents <- function(
 
   # Create options object
   options <- list(size = size)
-
-  base_req <- request("https://search.patentsview.org") |>
-    req_url_path("/api/v1/patent/") |>
-    req_headers("X-Api-Key" = api_key) |>
-    req_throttle(45 / 60) # Rate limit as per API docs
+  
+  # Create and perform request
+  base_req <- create_base_request("patent", api_key)
 
   req_with_query <- base_req |>
-    req_url_query(
-      q = toJSON(query, auto_unbox = TRUE),
-      f = toJSON(fields, auto_unbox = TRUE),
-      s = '[{"patent_date":"asc"}]',
-      o = toJSON(options, auto_unbox = TRUE)
+    add_query_params(
+      query = query,
+      fields = fields,
+      sort = list(list(patent_date = "asc")),
+      options = list(size = size)
     )
 
-  resp <- req_with_query |>
-    req_perform() |>
-    resp_body_json()
+  execute_request(req_with_query)
 }
-
 
 get_citing_patents <- function(
     patent_ids,
@@ -60,10 +85,7 @@ get_citing_patents <- function(
 
   query <- list("citation_patent_id" = patent_ids)
 
-  base_req <- request("https://search.patentsview.org") |>
-    req_url_path("/api/v1/patent/us_patent_citation/") |>
-    req_headers("X-Api-Key" = api_key) |>
-    req_throttle(45 / 60)
+  base_req <- create_base_request("patent/us_patent_citation", api_key)
 
   req_with_query <- base_req |>
     req_url_query(
@@ -80,24 +102,20 @@ get_inventors <- function(
     inventors,
     fields = c("inventor_id", "inventor_lastknown_location"),
     api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
-  
-  # Argument validation  
+  # Argument validation
   assertString(api_key, min.chars = 1)
-  
+
   query <- list("inventor_id" = inventors)
-  
+
   # Create request
-  base_req <- request("https://search.patentsview.org") |>
-    req_url_path("/api/v1/inventor/") |>
-    req_headers("X-Api-Key" = api_key) |>
-    req_throttle(45 / 60)
-  
+  base_req <- create_base_request("inventor", api_key)
+
   req_with_query <- base_req |>
     req_url_query(
       q = toJSON(query, auto_unbox = TRUE),
       f = toJSON(fields, auto_unbox = TRUE)
     )
-  
+
   # Perform request and return response
   resp <- req_with_query |>
     req_perform() |>
@@ -109,24 +127,20 @@ get_locations <- function(
     locations,
     fields = c("location_id", "location_name", "location_latitude", "location_longitude"),
     api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
-  
-  # Argument validation  
+  # Argument validation
   assertString(api_key, min.chars = 1)
-  
+
   query <- list("location_id" = locations)
-  
+
   # Create request
-  base_req <- request("https://search.patentsview.org") |>
-    req_url_path("/api/v1/location/") |>
-    req_headers("X-Api-Key" = api_key) |>
-    req_throttle(45 / 60)
-  
+  base_req <- create_base_request("location", api_key)
+
   req_with_query <- base_req |>
     req_url_query(
       q = toJSON(query, auto_unbox = TRUE),
       f = toJSON(fields, auto_unbox = TRUE)
     )
-  
+
   # Perform request and return response
   resp <- req_with_query |>
     req_perform() |>

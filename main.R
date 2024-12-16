@@ -5,10 +5,11 @@ library(tidyr)
 api_fields <- c(
   "patent_id",
   "patent_date",
+  "patent_abstract",
   "inventors"
 )
 
-patents <- get_patents(fields = api_fields)
+patents <- get_patents(fields = api_fields, start_date = "2022-01-01")
 
 patents_tidy <- bind_rows(patents$patents) |>
   unnest_wider(col = inventors) |>
