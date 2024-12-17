@@ -78,48 +78,37 @@ get_citing_patents <- function(
     patent_ids,
     fields = c("patent_id", "citation_patent_id", "citation_category"),
     api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
-  # Argument validation
   assertString(api_key, min.chars = 1)
   assertCharacter(patent_ids, min.len = 1, unique = TRUE)
   assertCharacter(fields, min.len = 1, unique = TRUE)
 
-  query <- list("citation_patent_id" = patent_ids)
-
   base_req <- create_base_request("patent/us_patent_citation", api_key)
 
   req_with_query <- base_req |>
-    req_url_query(
-      q = toJSON(query, auto_unbox = TRUE),
-      f = toJSON(fields, auto_unbox = TRUE)
+    add_query_params(
+      query = list("citation_patent_id" = patent_ids),
+      fields = fields
     )
 
-  resp <- req_with_query |>
-    req_perform() |>
-    resp_body_json()
+  execute_request(req_with_query)
 }
 
 get_inventors <- function(
     inventors,
     fields = c("inventor_id", "inventor_lastknown_location"),
     api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
-  # Argument validation
+  
   assertString(api_key, min.chars = 1)
-
-  query <- list("inventor_id" = inventors)
-
-  # Create request
+  
   base_req <- create_base_request("inventor", api_key)
 
   req_with_query <- base_req |>
-    req_url_query(
-      q = toJSON(query, auto_unbox = TRUE),
-      f = toJSON(fields, auto_unbox = TRUE)
+    add_query_params(
+      query = list("inventor_id" = inventors),
+      fields = fields
     )
 
-  # Perform request and return response
-  resp <- req_with_query |>
-    req_perform() |>
-    resp_body_json()
+  execute_request(req_with_query)
 }
 
 
@@ -136,13 +125,10 @@ get_locations <- function(
   base_req <- create_base_request("location", api_key)
 
   req_with_query <- base_req |>
-    req_url_query(
-      q = toJSON(query, auto_unbox = TRUE),
-      f = toJSON(fields, auto_unbox = TRUE)
+    add_query_params(
+      query = list("location_id" = locations),
+      fields = fields
     )
 
-  # Perform request and return response
-  resp <- req_with_query |>
-    req_perform() |>
-    resp_body_json()
+  execute_request(req_with_query)
 }

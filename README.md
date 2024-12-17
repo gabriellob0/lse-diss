@@ -7,7 +7,15 @@ Analyse how localised knowledge spillovers are and how much this has changed (e.
 
 ## Roadmap
 
-Next, probably play with the API data and extract some stuff with NLP.
+I want to incorporate the pagination option so I can extract a full dataset over a few years, but it might instead be better just to download bulk data from Patentsview.
+
+Before that, I think play around with the embedding stuff to see how to implement it. I will read a few papers to do that.
+
+After that, I can either scale the thing and do the test or see if I can find better address data.
+
+I got HTTP 414 URI Too Long when trying to get some data when sending 1000 IDs.
+
+Might be worth changing from GET to POST somehow. Maybe just changing the add_query_params fn.
 
 ## Data
 

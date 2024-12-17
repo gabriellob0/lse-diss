@@ -1,7 +1,9 @@
 source("lse_diss/dataset.R")
 library(dplyr)
 library(tidyr)
+library(arrow)
 
+# Calling API with functions ----------------------------------------------
 api_fields <- c(
   "patent_id",
   "patent_date",
@@ -9,7 +11,7 @@ api_fields <- c(
   "inventors"
 )
 
-patents <- get_patents(fields = api_fields, start_date = "2022-01-01")
+patents <- get_patents(fields = api_fields, start_date = "2022-01-01", size = 1000)
 
 patents_tidy <- bind_rows(patents$patents) |>
   unnest_wider(col = inventors) |>
@@ -27,3 +29,12 @@ inventors_tidy <- bind_rows(inventors$inventors) |>
 locations <- get_locations(inventors_tidy$location_id)
 
 locations_tidy <- bind_rows(locations$locations)
+
+
+
+# Saving some data --------------------------------------------------------
+patents_test <- patents_tidy |>
+  select(patent_id, patent_abstract) |>
+  distinct()
+
+write_csv_arrow(patents_test, "data/interim/patents_test.csv")
