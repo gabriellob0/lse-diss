@@ -9,7 +9,7 @@ Analyse how localised knowledge spillovers are and how much this has changed (e.
 
 I want to incorporate the pagination option so I can extract a full dataset over a few years, but it might instead be better just to download bulk data from Patentsview.
 
-Before that, I think play around with the embedding stuff to see how to implement it. I will read a few papers to do that.
+The way to go seems to be to encode and then use FAISS for nearest neighbour search.
 
 After that, I can either scale the thing and do the test or see if I can find better address data.
 
@@ -17,9 +17,22 @@ I got HTTP 414 URI Too Long when trying to get some data when sending 1000 IDs.
 
 Might be worth changing from GET to POST somehow. Maybe just changing the add_query_params fn.
 
+Scaling strategy:
+
+1. Pick base year - I will go with 2010 for now
+2. Download ALL abstracts IDs, inventor IDs, and some sort of date since 2010
+3. For patents in the base year, find all the citations
+4. For each citation, construct the dataset of possible controls
+5. (restrict by date, like 3 months, and remove any other citing patents)
+6. Embbed all these abstracts and do nearest neighbour search
+7. Should have a three column dataset (or maybe each group should have three patents)
+8. Create a dataset with the location of each patent (created from iventor locations)
+9. Match each dataset so I have location for all patents.
+
 ## Data
 
 Data from the USPTO API. The idea for sample construction right now is:
+
 1. Pick sample of patents (e.g., university asignees) plus originating year, mainly to make it computationally viable.
 2. Randomly select inventor of patent and assign geographic location (alternatively, use JTH method).
 3. Match inventor location to feature in US map.

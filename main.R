@@ -11,25 +11,47 @@ api_fields <- c(
   "inventors"
 )
 
-patents <- get_patents(fields = api_fields, start_date = "2022-01-01", size = 1000)
+# Retrieve patents
+patents <- get_patents(fields = api_fields, size = 10)
 
 patents_tidy <- bind_rows(patents$patents) |>
   unnest_wider(col = inventors) |>
   mutate(inventor_id = basename(inventor))
 
-citing_patents <- get_citing_patents(unique(patents_tidy$patent_id))
+# Retrieve all patents
+all_patents <- get_all_patents(fields = api_fields)
+
+all_patents_tidy <- bind_rows(all_patents) |>
+  unnest_wider(col = inventors) |>
+  mutate(inventor_id = basename(inventor))
+
+# Verify unique patent count
+length(unique(all_patents_tidy$patent_id))
+
+# Retrieve citing patents using new get_by_id() function
+citing_patents <- get_by_id(
+  ids = unique(patents_tidy$patent_id), 
+  query_type = "citations"
+)
 
 citing_patents_tidy <- bind_rows(citing_patents$us_patent_citations)
 
-inventors <- get_inventors(inventors = unique(patents_tidy$inventor_id))
+# Retrieve inventors using new get_by_id() function
+inventors <- get_by_id(
+  ids = unique(patents_tidy$inventor_id), 
+  query_type = "inventors"
+)
 
 inventors_tidy <- bind_rows(inventors$inventors) |>
   mutate(location_id = basename(inventor_lastknown_location))
 
-locations <- get_locations(inventors_tidy$location_id)
+# Retrieve locations using new get_by_id() function
+locations <- get_by_id(
+  ids = unique(inventors_tidy$location_id), 
+  query_type = "locations"
+)
 
 locations_tidy <- bind_rows(locations$locations)
-
 
 
 # Saving some data --------------------------------------------------------
@@ -37,4 +59,4 @@ patents_test <- patents_tidy |>
   select(patent_id, patent_abstract) |>
   distinct()
 
-write_csv_arrow(patents_test, "data/interim/patents_test.csv")
+#write_csv_arrow(patents_test, "data/interim/patents_test.csv")
