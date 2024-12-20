@@ -1,7 +1,11 @@
-source("lse_diss/dataset.R")
+source("lse_diss/data/api.R")
+source("lse_diss/data/bulk.R")
 library(dplyr)
 library(tidyr)
-library(arrow)
+
+# TODO: figure out how to not run out of memory
+get_bulk_data(readRDS("references/bulk_data_urls.Rds"))
+
 
 # Calling API with functions ----------------------------------------------
 api_fields <- c(
@@ -55,8 +59,10 @@ locations_tidy <- bind_rows(locations$locations)
 
 
 # Saving some data --------------------------------------------------------
-patents_test <- patents_tidy |>
+patents_test <- all_patents_tidy |>
   select(patent_id, patent_abstract) |>
   distinct()
 
-#write_csv_arrow(patents_test, "data/interim/patents_test.csv")
+arrow::write_csv_arrow(patents_test, "data/interim/patents_test.csv")
+
+

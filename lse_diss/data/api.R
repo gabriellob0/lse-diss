@@ -3,6 +3,22 @@ library(jsonlite)
 library(checkmate)
 library(purrr)
 
+build_patent_query <- function(start_date, end_date) {
+  assertDate(as.Date(start_date))
+  assertDate(as.Date(end_date))
+
+  list(
+    "_and" = list(
+      list("_gte" = list("patent_date" = start_date)),
+      list("_lte" = list("patent_date" = end_date)),
+      list("_eq" = list("assignees.assignee_type" = "2")),
+      list("_eq" = list("assignees.assignee_country" = "US")),
+      list("_gte" = list("patent_num_times_cited_by_us_patents" = 1)),
+      list("_eq" = list("patent_type" = "utility"))
+    )
+  )
+}
+
 create_request <- function(
     endpoint,
     api_key,
@@ -38,23 +54,10 @@ get_patents <- function(
   # Argument validation
   assertString(api_key, min.chars = 1)
   assertCharacter(fields, min.len = 1, unique = TRUE)
-  assertDate(as.Date(start_date))
-  assertDate(as.Date(end_date))
   assertNumber(size, lower = 1, upper = 1000, finite = TRUE)
 
-  # Create query with all filtering conditions
-  query <- list(
-    "_and" = list(
-      list("_gte" = list("patent_date" = start_date)),
-      list("_lte" = list("patent_date" = end_date)),
-      list("_eq" = list("assignees.assignee_type" = "2")),
-      list("_eq" = list("assignees.assignee_country" = "US")),
-      list("_gte" = list("patent_num_times_cited_by_us_patents" = 1)),
-      list("_eq" = list("patent_type" = "utility"))
-    )
-  )
+  query <- build_patent_query(start_date, end_date)
 
-  # Create and perform request
   req <- create_request(
     "patent",
     api_key,
@@ -72,9 +75,11 @@ get_all_patents <- function(
     start_date = "2023-01-01",
     end_date = "2024-01-01",
     api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
+  query <- build_patent_query(start_date, end_date)
+
   next_req <- function(resp, req) {
     data <- resp_body_json(resp)
-    if (is.null(data$patents)) {
+    if (is.null(data$patents) | length(data$patents) == 0) {
       return(NULL)
     }
 
@@ -90,17 +95,6 @@ get_all_patents <- function(
     )
   }
 
-  query <- list(
-    "_and" = list(
-      list("_gte" = list("patent_date" = start_date)),
-      list("_lte" = list("patent_date" = end_date)),
-      list("_eq" = list("assignees.assignee_type" = "2")),
-      list("_eq" = list("assignees.assignee_country" = "US")),
-      list("_gte" = list("patent_num_times_cited_by_us_patents" = 1)),
-      list("_eq" = list("patent_type" = "utility"))
-    )
-  )
-
   first_req <- create_request(
     "patent",
     api_key,
@@ -113,6 +107,7 @@ get_all_patents <- function(
   resps <- req_perform_iterative(
     first_req,
     next_req,
+    max_reqs = Inf,
     progress = TRUE
   )
 
