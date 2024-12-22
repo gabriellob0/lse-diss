@@ -1,42 +1,33 @@
 import polars as pl
-from sentence_transformers import SentenceTransformer, util
-from itertools import combinations
-from tqdm import tqdm
+from sentence_transformers import SentenceTransformer
+from annoy import AnnoyIndex
 
-# Read the CSV file
-df = pl.read_csv("data/interim/patents_test.csv")
+patents = pl.read_csv("data/interim/patents_test.csv")
+abstracts = patents['patent_abstract'].to_list()
 
-# Initialize the model
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+model = SentenceTransformer("all-MiniLM-L6-v2")
+embeddings = model.encode(abstracts, show_progress_bar=True)
 
-# Get abstracts list
-abstracts = df['patent_abstract'].to_list()
-patent_ids = df['patent_id'].to_list()
+dimension = embeddings.shape[1]
+annoy_index = AnnoyIndex(dimension, 'angular')
 
-print("Computing embeddings...")
-# Compute embeddings for all abstracts at once (more efficient)
-embeddings = model.encode(abstracts, convert_to_tensor=True)
+for i, v in enumerate(embeddings):
+    annoy_index.add_item(i, v)
 
-# Create all possible pairs of indices
-pairs = list(combinations(range(len(abstracts)), 2))
-total_comparisons = len(pairs)
+annoy_index.build(256)
 
-print(f"Computing {total_comparisons} comparisons...")
-# Calculate similarities for all pairs
-similarities = []
-for i, j in tqdm(pairs, total=total_comparisons):
-    similarity = util.pytorch_cos_sim(embeddings[i], embeddings[j]).item()
-    similarities.append({
-        'patent_id_1': patent_ids[i],
-        'patent_id_2': patent_ids[j],
-        'similarity': similarity
-    })
+annoy_index.get_n_items()
+annoy_index.get_n_trees()
+annoy_index.get_distance(0, 2)
+len(annoy_index.get_item_vector(1))
 
-# Convert results to polars DataFrame
-results = pl.DataFrame(similarities)
+nearest_neighbours = annoy_index.get_nns_by_item(0, 3)
 
-# Sort by similarity in descending order
-results = results.sort('similarity', descending=True)
+result = (
+    patents
+    .with_row_index()
+    .filter(pl.col("index").is_in(nearest_neighbours))
+)
 
-print("\nTop 10 most similar patent pairs:")
-print(results.head(10))
+result[0, 2]
+result[1, 2]

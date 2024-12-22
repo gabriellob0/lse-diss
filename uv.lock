@@ -2,6 +2,12 @@ version = 1
 requires-python = ">=3.12"
 
 [[package]]
+name = "annoy"
+version = "1.17.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/07/38/e321b0e05d8cc068a594279fb7c097efb1df66231c295d482d7ad51b6473/annoy-1.17.3.tar.gz", hash = "sha256:9cbfebefe0a5f843eba29c6be4c84d601f4f41ad4ded0486f1b88c3b07739c15", size = 647460 }
+
+[[package]]
 name = "certifi"
 version = "2024.8.30"
 source = { registry = "https://pypi.org/simple" }
@@ -129,6 +135,7 @@ name = "lse-diss"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "annoy" },
     { name = "polars" },
     { name = "sentence-transformers" },
     { name = "tqdm" },
@@ -136,6 +143,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "annoy", specifier = ">=1.17.3" },
     { name = "polars", specifier = ">=1.17.1" },
     { name = "sentence-transformers", specifier = ">=3.3.1" },
     { name = "tqdm", specifier = ">=4.67.0" },
