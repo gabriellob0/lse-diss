@@ -7,9 +7,12 @@ Analyse how localised knowledge spillovers are and how much this has changed (e.
 
 ## Roadmap
 
-I want to incorporate the pagination option so I can extract a full dataset over a few years, but it might instead be better just to download bulk data from Patentsview.
+I have downloaded some bulk data with the function, but the citation data is too large to do like that and process in R.
 
-The way to go seems to be to encode and then use FAISS for nearest neighbour search.
+I have downloaded it separately and processed it in Python. I think a strategy to keep it reproducible will be to:
+
+1. Download + unzip with the function I created, keep it in external
+2. Use the polars function to convert from tsv to parquet.
 
 After that, I can either scale the thing and do the test or see if I can find better address data.
 

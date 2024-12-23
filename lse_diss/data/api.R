@@ -3,6 +3,8 @@ library(jsonlite)
 library(checkmate)
 library(purrr)
 
+## TODO: more comprehensive function to get API key.
+
 build_patent_query <- function(start_date, end_date) {
   assertDate(as.Date(start_date))
   assertDate(as.Date(end_date))
