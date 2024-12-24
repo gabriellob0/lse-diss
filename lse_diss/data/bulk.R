@@ -22,7 +22,7 @@ get_bulk_data <- function(urls, output_dir = "data/raw") {
       req_progress() %>%
       req_retry(max_tries = 3)
 
-    resp <- req_perform(req, path = zip_path)
+    req_perform(req, path = zip_path)
 
     utils::unzip(zip_path, exdir = path(output_dir, "temp"))
 

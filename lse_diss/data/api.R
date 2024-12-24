@@ -1,13 +1,52 @@
 library(httr2)
-library(jsonlite)
 library(checkmate)
-library(purrr)
 
-## TODO: more comprehensive function to get API key.
+
+# Helpers -----------------------------------------------------------------
+
+get_api_key <- function() {
+  key <- Sys.getenv("PATENTSVIEW_API_KEY")
+  if (identical(key, "")) {
+    stop("No API key found, please supply with PATENTSVIEW_API_KEY env var")
+  }
+  key
+}
+
+create_request <- function(
+    endpoint,
+    api_key,
+    query,
+    fields = NULL,
+    sort = NULL,
+    options = NULL) {
+  params <- list(q = query, f = fields, s = sort, o = options)
+  params <- params[!sapply(params, is.null)]
+
+  req <- request("https://search.patentsview.org") |>
+    req_url_path("/api/v1/") |>
+    req_url_path_append(endpoint) |>
+    req_headers("X-Api-Key" = api_key) |>
+    req_throttle(45 / 60)
+
+  req_body_json(req, params)
+}
+
+execute_request <- function(req) {
+  req |>
+    req_perform() |>
+    resp_body_json()
+}
+
+
+# Patents -----------------------------------------------------------------
 
 build_patent_query <- function(start_date, end_date) {
   assertDate(as.Date(start_date))
   assertDate(as.Date(end_date))
+
+  if (as.Date(start_date) > as.Date(end_date)) {
+    stop("start_date must be before or equal to end_date")
+  }
 
   list(
     "_and" = list(
@@ -21,41 +60,13 @@ build_patent_query <- function(start_date, end_date) {
   )
 }
 
-create_request <- function(
-    endpoint,
-    api_key,
-    query,
-    fields = NULL,
-    sort = NULL,
-    options = NULL) {
-  req <- request("https://search.patentsview.org") |>
-    req_url_path("/api/v1/") |>
-    req_url_path_append(endpoint) |>
-    req_headers("X-Api-Key" = api_key) |>
-    req_throttle(45 / 60)
-
-  params <- list(q = query, f = fields, s = sort, o = options) |>
-    discard(is.null) |>
-    map(\(x) toJSON(x, auto_unbox = TRUE))
-
-  req_url_query(req, !!!params)
-}
-
-execute_request <- function(req) {
-  req |>
-    req_perform() |>
-    resp_body_json()
-}
-
 get_patents <- function(
     fields = c("patent_id", "patent_title", "patent_date"),
     start_date = "2023-01-01",
     end_date = "2024-01-01",
     size = 10,
-    api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
+    api_key = get_api_key()) {
   # Argument validation
-  assertString(api_key, min.chars = 1)
-  assertCharacter(fields, min.len = 1, unique = TRUE)
   assertNumber(size, lower = 1, upper = 1000, finite = TRUE)
 
   query <- build_patent_query(start_date, end_date)
@@ -76,12 +87,12 @@ get_all_patents <- function(
     fields = c("patent_id", "patent_title", "patent_date"),
     start_date = "2023-01-01",
     end_date = "2024-01-01",
-    api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
+    api_key = get_api_key()) {
   query <- build_patent_query(start_date, end_date)
 
   next_req <- function(resp, req) {
     data <- resp_body_json(resp)
-    if (is.null(data$patents) | length(data$patents) == 0) {
+    if (is.null(data$patents) || length(data$patents) == 0) {
       return(NULL)
     }
 
@@ -119,58 +130,59 @@ get_all_patents <- function(
 }
 
 
+# IDs ---------------------------------------------------------------------
+
+configure_id_query <- function(
+    query_type = c("citations", "inventors", "locations"),
+    fields = NULL) {
+  endpoint_defaults <- list(
+    "citations" = list(
+      endpoint = "patent/us_patent_citation",
+      query_param = "citation_patent_id",
+      default_fields = c("patent_id", "citation_patent_id", "citation_category")
+    ),
+    "inventors" = list(
+      endpoint = "inventor",
+      query_param = "inventor_id",
+      default_fields = c("inventor_id", "inventor_lastknown_location")
+    ),
+    "locations" = list(
+      endpoint = "location",
+      query_param = "location_id",
+      default_fields = c("location_id", "location_name", "location_latitude", "location_longitude")
+    )
+  )
+
+  query_type <- match.arg(query_type)
+  config <- endpoint_defaults[[query_type]]
+
+  if (is.null(fields)) {
+    fields <- config$default_fields
+  }
+
+  list(
+    endpoint = config$endpoint,
+    query_param = config$query_param,
+    fields = fields
+  )
+}
+
 get_by_id <- function(
     ids,
     query_type = c("citations", "inventors", "locations"),
     fields = NULL,
-    api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
+    api_key = get_api_key()) {
   # Validate inputs
-  assertString(api_key, min.chars = 1)
   assertCharacter(ids, min.len = 1, unique = TRUE)
 
-  # Define default fields for each query type
-  default_fields <- list(
-    "citations" = c("patent_id", "citation_patent_id", "citation_category"),
-    "inventors" = c("inventor_id", "inventor_lastknown_location"),
-    "locations" = c("location_id", "location_name", "location_latitude", "location_longitude")
-  )
-
-  # Validate query_type
-  query_type <- match.arg(query_type)
-
-  # Use default fields if not provided
-  if (is.null(fields)) {
-    fields <- default_fields[[query_type]]
-  } else {
-    # Validate user-provided fields
-    assertCharacter(fields, min.len = 1, unique = TRUE)
-  }
-
-  # Map query types to endpoint names and query parameter names
-  endpoint_map <- list(
-    "citations" = list(
-      endpoint = "patent/us_patent_citation",
-      query_param = "citation_patent_id"
-    ),
-    "inventors" = list(
-      endpoint = "inventor",
-      query_param = "inventor_id"
-    ),
-    "locations" = list(
-      endpoint = "location",
-      query_param = "location_id"
-    )
-  )
-
-  # Get the appropriate endpoint and query parameter
-  endpoint_info <- endpoint_map[[query_type]]
+  config <- configure_id_query(query_type, fields)
 
   # Create the request
   req <- create_request(
-    endpoint_info$endpoint,
+    config$endpoint,
     api_key,
-    query = setNames(list(ids), endpoint_info$query_param),
-    fields = fields
+    query = setNames(list(ids), config$query_param),
+    fields = config$fields
   )
 
   # Execute and return the request

@@ -4,7 +4,7 @@ library(dplyr)
 library(tidyr)
 
 # TODO: figure out how to not run out of memory
-get_bulk_data(readRDS("references/bulk_data_urls.Rds"))
+#get_bulk_data(readRDS("references/bulk_data_urls.Rds"))
 
 
 # Calling API with functions ----------------------------------------------
@@ -16,7 +16,7 @@ api_fields <- c(
 )
 
 # Retrieve patents
-patents <- get_patents(fields = api_fields, size = 10)
+patents <- get_patents(fields = api_fields, size = 1000)
 
 patents_tidy <- bind_rows(patents$patents) |>
   unnest_wider(col = inventors) |>
