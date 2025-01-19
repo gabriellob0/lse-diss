@@ -3,10 +3,17 @@
 library(httr2)
 library(purrr)
 
-make_client <- function(api_key) {
+make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
   if (identical(api_key, "")) {
     stop("No API key found, please create PATENTSVIEW_API_KEY environmental variable.")
   }
+  
+  ENDPOINTS <- list(
+    patents = "patent",
+    citations = "patent/us_patent_citation",
+    inventors = "inventor",
+    locations = "location"
+  )
   
   #NOTE: I am not passing the api_key as an argument and I hope this makes it
   #hard coded here.
@@ -20,41 +27,32 @@ make_client <- function(api_key) {
       req_body_json()
   }
   
+  iterate_requests <- function() {
+    
+  }
+  
   get_patents <- function(params) {
-    first_page <- make_request("patent", params)
-    
-    next_page <- function(resp) {
-      if (length(resp$patents) == 0) {
-        return(NULL)
-      }
-      
-      LAST_ID <- pluck(resp$patents, -1, "patent_id")
-      
-      make_request()
-    }
-    
-    resp <- req_perform_iterative(
-      first_page,
-      next_page,
-      max_reqs = Inf
-    )
-  }
-  
-  get_related <- function() {
     
   }
   
-  list(get_patents, get_related, make_request)
+  get_related <- function(
+    type = c("citations", "inventors", "locations"),
+    params) {
+    type <- arg_match(type)
+  }
+  
+  list(get_patents, get_related)
 }
 
 make_params <- function(
-    type = c("patents", "citations", "inventors", "locations")) {
+    type = c("patents", "citations", "inventors", "locations"),
+    dates, ids, fields, size) {
   type <- arg_match(type)
   
   params <- list(
     q = query,
     f = fields,
-    s = sort,
+    s = list(list(patent_id = "asc")),
     o = options
   )
 }
