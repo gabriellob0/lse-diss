@@ -1,4 +1,4 @@
-# PatentsView API Client ----
+# PatentSearch API Client ----
 
 library(httr2)
 library(purrr)
@@ -26,17 +26,21 @@ make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
   
   next_req <- function(resp, req) {
     data <- resp |>
-      resp_body_json() |>
-      pluck(-1)
+      resp_body_json()
     
     if (length(data) == 0) {
       return(NULL)
     }
     
+    total_hits <- pluck(data, "total_hits")
+    #print(total_hits)
+    
+    signal_total_pages(ceiling(total_hits / 1000))
+    
     id_field <- names(pluck(req, "body", "data", "s", 1))
     
     # NOTE: This is the cursor
-    pluck(req, "body", "data", "o", "after") <- pluck(data, -1, id_field)
+    pluck(req, "body", "data", "o", "after") <- pluck(data, -1, -1, id_field)
     
     req
   }
@@ -77,7 +81,7 @@ make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
 
 make_params <- function(
     type = c("patents", "us_patent_citations", "inventors", "locations"),
-    dates = c("2023-01-01", "2024-01-01"), ids, size = 100) {
+    fields = NULL, ids, dates = c("2023-01-01", "2024-01-01"), size = 100) {
   type <- arg_match(type)
   
   ID_FIELDS <- list(
@@ -88,7 +92,7 @@ make_params <- function(
   )
   
   DEFAULT_FIELDS <- list(
-    patents = c("patent_id", "patent_date", "patent_abstract", "inventors"),
+    patents = c("patent_id", "patent_date", "patent_abstract", "inventors"), # TODO: assignees
     us_patent_citations = c("patent_id", "citation_patent_id", "citation_category"),
     inventors = c("inventor_id", "inventor_lastknown_location"),
     locations = c("location_id", "location_latitude", "location_longitude")
@@ -100,9 +104,11 @@ make_params <- function(
         list("_gte" = list("patent_date" = dates[1])),
         list("_lte" = list("patent_date" = dates[2])),
         list("_eq" = list("assignees.assignee_type" = "2")),
+        #list("_or" = list(list("assignees.assignee_type" = "2"), list("assignees.assignee_type" = "3"))),
         list("_eq" = list("assignees.assignee_country" = "US")),
         list("_gte" = list("patent_num_times_cited_by_us_patents" = 1)),
-        list("_eq" = list("patent_type" = "utility"))
+        list("_eq" = list("patent_type" = "utility")),
+        list("_eq" = list("inventors.inventor_country" = "US"))
       )
     )
   } else {
@@ -112,8 +118,47 @@ make_params <- function(
   # NOTE: All parameters are required when using POST
   params <- list(
     q = query,
-    f = DEFAULT_FIELDS[[type]],
+    f = fields %||% DEFAULT_FIELDS[[type]],
     s = list(setNames(list("asc"), ID_FIELDS[[type]])),
     o = list(size = size)
   )
 }
+
+# Tests ----
+
+#client <- make_client()
+#get_patents <- client$get_patents
+#get_related <- client$get_related
+#patent_params <- make_params("patents", size = 5)
+
+#patents <- get_patents(patent_params, n_requests = 7)
+
+#inventor_ids <- patents |>
+#  bind_rows() |>
+#  unnest_wider(inventors) |>
+#  mutate(inventor_id = basename(inventor)) |>
+#  pull(inventor_id) |>
+#  unique()
+
+#inventor_params <- make_params("inventors", ids = inventor_ids, size = 3)
+
+#inventors <- get_related("inventors", inventor_params, n_requests = 3)
+
+#location_ids <- inventors |>
+#  bind_rows() |>
+#  mutate(location_id = basename(inventor_lastknown_location)) |>
+#  pull(location_id) |>
+#  unique()
+
+#location_params <- make_params("locations", ids = location_ids, size = 3)
+
+#locations <- get_related("locations", location_params, n_requests = 3)
+
+#patent_ids <- patents |>
+#  bind_rows() |>
+#  pull(patent_id) |>
+#  unique()
+
+#citations_params <- make_params("us_patent_citations", ids = patent_ids, size = 3)
+
+#citations <- get_related("us_patent_citations", citations_params, n_requests = 3)
