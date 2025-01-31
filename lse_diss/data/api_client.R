@@ -92,7 +92,7 @@ make_params <- function(
   )
   
   DEFAULT_FIELDS <- list(
-    patents = c("patent_id", "patent_date", "patent_abstract", "inventors"), # TODO: assignees
+    patents = c("patent_id", "patent_date", "patent_abstract", "inventors", "assignees"),
     us_patent_citations = c("patent_id", "citation_patent_id", "citation_category"),
     inventors = c("inventor_id", "inventor_lastknown_location"),
     locations = c("location_id", "location_latitude", "location_longitude")
@@ -104,9 +104,9 @@ make_params <- function(
         list("_gte" = list("patent_date" = dates[1])),
         list("_lte" = list("patent_date" = dates[2])),
         list("_eq" = list("assignees.assignee_type" = "2")),
-        #list("_or" = list(list("assignees.assignee_type" = "2"), list("assignees.assignee_type" = "3"))),
         list("_eq" = list("assignees.assignee_country" = "US")),
-        list("_gte" = list("patent_num_times_cited_by_us_patents" = 1)),
+        # for originating only
+        #list("_gte" = list("patent_num_times_cited_by_us_patents" = 1)),
         list("_eq" = list("patent_type" = "utility")),
         list("_eq" = list("inventors.inventor_country" = "US"))
       )

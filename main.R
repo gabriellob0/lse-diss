@@ -1,19 +1,18 @@
 # Imports ----
 
-source("lse_diss/api_client.R")
-#source("lse_diss/data/bulk.R")
-library(dplyr)
-library(tidyr)
+source("lse_diss/data/api_client.R")
+source("lse_diss/features.R")
 
+# Data ----
 client <- make_client()
 
-patents_resp <- client$get_patents(
-  make_params("patents", size = 1000)
-)
+make_dates(c("2005-01-01", "2005-01-02"))
 
-patents <- patents_resp |>
-  bind_rows() |>
-  unnest_wider(inventors)
+patents <- make_patents(dates = c("2023-01-01", "2024-01-01"))
+
+# build originating patent dataset
+#originating <- 
+
 
 patents |>
   pull(inventor_country) |>
