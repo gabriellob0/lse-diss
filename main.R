@@ -6,9 +6,11 @@ source("lse_diss/features.R")
 # Data ----
 client <- make_client()
 
-make_dates(c("2005-01-01", "2005-01-02"))
+dates <- make_dates(c("2000-01-01", "2005-01-01"))
 
-patents <- make_patents(dates = c("2023-01-01", "2024-01-01"))
+# I tested this with map for some reason, but should work with walk
+dates |>
+  walk(\(x) make_patents(dates = x), .progress = TRUE)
 
 # build originating patent dataset
 #originating <- 

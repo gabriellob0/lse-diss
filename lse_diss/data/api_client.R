@@ -21,6 +21,7 @@ make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
       req_url_path("api", "v1", endpoint) |>
       req_headers("X-Api-Key" = api_key) |>
       req_throttle(45 / 60) |>
+      req_retry() |>
       req_body_json(compact(params))
   }
   
@@ -33,7 +34,7 @@ make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
     }
     
     total_hits <- pluck(data, "total_hits")
-    #print(total_hits)
+    Sys.sleep(5) #throttle stopped working, so I added this
     
     signal_total_pages(ceiling(total_hits / 1000))
     
@@ -92,7 +93,7 @@ make_params <- function(
   )
   
   DEFAULT_FIELDS <- list(
-    patents = c("patent_id", "patent_date", "patent_abstract", "inventors", "assignees"),
+    patents = c("patent_id", "patent_date", "patent_abstract", "patent_num_times_cited_by_us_patents", "inventors", "assignees"),
     us_patent_citations = c("patent_id", "citation_patent_id", "citation_category"),
     inventors = c("inventor_id", "inventor_lastknown_location"),
     locations = c("location_id", "location_latitude", "location_longitude")

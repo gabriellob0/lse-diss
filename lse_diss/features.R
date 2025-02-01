@@ -1,6 +1,8 @@
+library(lubridate)
+library(fs)
+library(arrow)
 library(dplyr)
 library(tidyr)
-library(lubridate)
 
 make_dates <- function(date_range) {
   start_date <- ymd(date_range[1])
@@ -36,6 +38,15 @@ make_dates <- function(date_range) {
 }
 
 make_patents <- function(dates) {
+  if (!codec_is_available("zstd")) {
+    stop("Change parquet compression to available type")
+  }
+  
+  base_path <- path("data", "raw", "patents")
+  dir_create(base_path)
+  
+  file_name <- paste(dates, collapse = "_to_")
+  
   patents_resp <- client$get_patents(
     make_params("patents", dates = dates, size = 1000)
   )
@@ -52,11 +63,16 @@ make_patents <- function(dates) {
     mutate(patent_id, assignee_id = basename(assignee), .keep = "none")
 
   # build patent dataset join to assignee
-  patents_resp |> # TODO: test for matching size
+  patents <- patents_resp |> # TODO: test for matching size
     map(\(x) discard_at(x, "assignees")) |>
     bind_rows() |>
     hoist(inventors, "inventor") |>
+    mutate(inventor_id = basename(inventor)) |>
     select(-inventors) |>
     right_join(assignees, by = join_by(patent_id)) |>
     distinct()
+  
+  write_parquet(
+    patents, path(base_path, file_name, ext = "parquet"), compression = "zstd"
+  )
 }

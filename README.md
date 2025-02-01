@@ -8,9 +8,12 @@ I want to analyse the extent of geographic concentration in patent citations, us
 
 ## Roadmap
 
-I should figure out data I want from the API and what data I want bulk. Probably patent data and abstracts from bulk. Unify the code in Python since polars can process the large dataset better AFAIK.
+The API seems to be having some 429 problems, even with retries and throtles. I have implemented a large manual system sleep time that solves it for now, but it is something to watch out. Also, on the 12 of February they will do some updates to the API.
 
-After that, I can either scale the thing and do the test or see if I can find better address data.
+The next steps should most likely be:
+
+1. Code the patents ingestions, fetch citations, and build the originating-citing dataset.
+2. Move some of the confings (e.g., endpoints) and parameters to a reference files. The configs could be ingested by the client and the params by the make params function.
 
 Scaling strategy:
 
@@ -28,19 +31,19 @@ Scaling strategy:
 
 ### Sample Construction Table
 
-| API Field                            | Values                                                                  | Notes                                                                   | Source                                                             | Literature                                                                                                                  |
-|--------------------------------------|-------------------------------------------------------------------------|-------------------------------------------------------------------------|--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| assignee_type                        | I am using "2" and "3" for now?, which means a US or foreign company.    | 4 and 5 includes individuals                                            | <https://patentsview.org/download/data-download-dictionary>          | JTH argues this information is not relevant. TFK also removes individual assignees. MNOT also restricts to non-gov patents. |
-| assignee_country                     | I restrict to US?                                                       |                                                                         |                                                                    | MNOT restricts to the US.                                                                                                   |
-| patent_num_times_cited_by_us_patents | Set to greater than one, if not it won't ever be an originating patent. |                                                                         |                                                                    |                                                                                                                             |
-| patent_type                          | Set to "utility".                                                       | This excludes                                                           | <https://www.uspto.gov/web/offices/ac/ido/oeip/taf/data/patdesc.htm> |                                                                                                                             |
-| patent_date                          |                                                                         | Grant date.                                                             |                                                                    | JTH uses grant date to match controls. TFK does the opposite. (check)                                                       |
-| assignee_id                          | TODO: remove self-citations                                             | Find from the URL in assignees.assignee                                 |                                                                    | JTH removes self-citations                                                                                                  |
-| inventor_sequence                    |                                                                         | Order inventors appear in file. Might be useful for selecting location. |                                                                    |                                                                                                                             |
-| patent_earliest_application_date     |                                                                         | Might be useful to set baseline originating year.                       |                                                                    | I think JTH uses this for originating years. TFK does the opposite. (check)                                                 |
-| inventor_country                     | NA                                                                      | Cant filter for all US inventors unless negate all other countries.     |                                                                    | What JTH uses to separate domestic vs foreign patents. TFK restrics to at least one US domiciled inventor.                  |
-| inventor_id                          |                                                                         |                                                                         |                                                                    | JTH suggests in comment to TF to remove inventor self-cites.                                                                |
-| citation_category                    | TODO: restrict to "cited by applicant"                                  |                                                                         |                                                                    | Check Thompson (2006) for justification. Other papers dont seem to bother with this, only briefly mention.                  |
+| API Field | Values | Notes | Source | Literature |
+|---|---|---|---|---|
+| assignee_type | I am using "2", which means a US company. | I still need to filter to ONLY US companies after the query. | <https://patentsview.org/download/data-download-dictionary> | JTH argues this information is not relevant. TFK also removes individual assignees. MNOT also restricts to non-gov patents. |
+| assignee_country | I restrict to US. | Same as above. |  | MNOT restricts to the US. |
+| patent_num_times_cited_by_us_patents |  | Useful to filter originating patents. |  |  |
+| patent_type | Set to "utility". |  | <https://www.uspto.gov/web/offices/ac/ido/oeip/taf/data/patdesc.htm> |  |
+| patent_date |  | Grant date. |  | JTH uses grant date to match controls. TFK does the opposite. (check) |
+| assignee_id | To remove self-citations | Find from the URL in assignees.assignee. |  | JTH removes self-citations. |
+| inventor_sequence |  | Order inventors appear in file. Might be useful for selecting location. |  |  |
+| patent_earliest_application_date |  | Might be useful to set baseline originating year. |  | I think JTH uses this for originating years. TFK does the opposite. (check) |
+| inventor_country | US | Filter to at least one US inventor. |  | What JTH uses to separate domestic vs foreign patents. TFK and MNOT restrics to at least one US domiciled inventor. |
+| inventor_id |  |  |  | JTH suggests in comment to TF to remove inventor self-cites. MNOT does so. |
+| citation_category | TODO: restrict to "cited by applicant". |  |  | Check Thompson (2006) for justification. Other papers dont seem to bother with this, only briefly mention. |
 
 Data from the USPTO API. The idea for sample construction right now is:
 
