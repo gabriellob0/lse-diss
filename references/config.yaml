@@ -13,7 +13,7 @@ default:
         - _eq:
             patent_type: utility
         - _eq:
-            inventors.inventor_country: us
+            inventors.inventor_country: US
     f:
       - patent_id
       - patent_date
@@ -24,5 +24,37 @@ default:
     s:
       - patent_id: asc
     o:
-      size: 5
+      size: null
+  us_patent_citations:
+    q:
+      citation_patent_id: null
+    f:
+      - patent_id
+      - citation_patent_id
+      - citation_category
+    s:
+      - citation_patent_id: asc
+    o:
+      size: null
+  inventors:
+    q:
+      inventor_id: null
+    f:
+      - inventor_id
+      - inventor_lastknown_location
+    s:
+      - inventor_id: asc
+    o:
+      size: null
+  locations:
+    q:
+      location_id: null
+    f:
+      - location_id
+      - location_latitude
+      - location_longitude
+    s:
+      - location_id: asc
+    o:
+      size: null
 production: null
