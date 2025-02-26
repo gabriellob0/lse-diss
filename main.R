@@ -13,8 +13,7 @@ dates |>
   walk(\(x) make_patents(dates = x), .progress = TRUE)
 
 # build originating patent dataset
-#originating <- 
-
+#originating <-
 
 patents |>
   pull(inventor_country) |>

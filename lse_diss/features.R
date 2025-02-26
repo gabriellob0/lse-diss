@@ -22,7 +22,11 @@ make_dates <- function(date_range) {
 
   intervals <- map(
     interval_starts,
-    \(start) c(format(start, "%Y-%m-%d"), format(start + years(2) - days(1), "%Y-%m-%d"))
+    \(start)
+      c(
+        format(start, "%Y-%m-%d"),
+        format(start + years(2) - days(1), "%Y-%m-%d")
+      )
   )
 
   # Handle remainder if exists
@@ -41,12 +45,12 @@ make_patents <- function(dates) {
   if (!codec_is_available("zstd")) {
     stop("Change parquet compression to available type")
   }
-  
+
   base_path <- path("data", "raw", "patents")
   dir_create(base_path)
-  
+
   file_name <- paste(dates, collapse = "_to_")
-  
+
   patents_resp <- client$get_patents(
     make_params("patents", dates = dates, size = 1000)
   )
@@ -71,8 +75,10 @@ make_patents <- function(dates) {
     select(-inventors) |>
     right_join(assignees, by = join_by(patent_id)) |>
     distinct()
-  
+
   write_parquet(
-    patents, path(base_path, file_name, ext = "parquet"), compression = "zstd"
+    patents,
+    path(base_path, file_name, ext = "parquet"),
+    compression = "zstd"
   )
 }
