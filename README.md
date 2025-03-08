@@ -31,6 +31,8 @@ Scaling strategy:
 
 ### Sample Construction Table
 
+My advisor says to match based on application date. Also, he highlights that examiner added patents might care some information.
+
 | API Field | Values | Notes | Source | Literature |
 |---|---|---|---|---|
 | assignee_type | I am using "2", which means a US company. | I still need to filter to ONLY US companies after the query. | <https://patentsview.org/download/data-download-dictionary> | JTH argues this information is not relevant. TFK also removes individual assignees. MNOT also restricts to non-gov patents. |
