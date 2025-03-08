@@ -25,7 +25,7 @@ make_client <- function(
   ) {
     type <- arg_match(type)
 
-    params <- pluck("parameters", type)
+    params <- pluck(config, "parameters", type)
 
     pluck(params, "o", "size") <- size
 
@@ -91,7 +91,7 @@ make_client <- function(
       resps_data(\(resp) resp_body_json(resp)[[type]])
   }
 
-  list(get_patents = get_patents)
+  list(get_patents = get_patents, make_params = make_params)
 }
 
 ## Tests ----
@@ -103,6 +103,7 @@ make_client <- function(
 #
 # client <- make_client()
 # get_patents <- client$get_patents
+# make_params <- client$make_params
 #
 # patent_param <- make_params("patents", dates = c("2021-01-01", "2022-01-01"))
 # patents <- get_patents("patents", patent_param, max_reqs = 7)

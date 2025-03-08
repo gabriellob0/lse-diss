@@ -44,13 +44,13 @@ make_dates <- function(date_range) {
 make_patents <- function(
   api_client = NULL,
   dates,
-  path = path("data", "raw", "patents")
+  fpath = path("data", "raw", "patents")
 ) {
   if (!codec_is_available("zstd")) {
     stop("Change parquet compression to available type")
   }
 
-  dir_create(path)
+  dir_create(fpath)
 
   file_name <- paste(dates, collapse = "_to_")
 
@@ -82,7 +82,7 @@ make_patents <- function(
 
   write_parquet(
     patents,
-    path(base_path, file_name, ext = "parquet"),
+    path(fpath, file_name, ext = "parquet"),
     compression = "zstd"
   )
 }
