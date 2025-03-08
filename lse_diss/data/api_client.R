@@ -5,16 +5,40 @@ library(purrr)
 library(rlang)
 library(yaml)
 
-make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY"), 
-                        config_path = "references/config.yaml") {
+make_client <- function(
+  api_key = Sys.getenv("PATENTSVIEW_API_KEY"),
+  config_path = "references/config.yaml"
+) {
   if (identical(api_key, "")) {
     stop(
       "No API key found, please create PATENTSVIEW_API_KEY environmental variable"
     )
   }
-  
+
   config <- read_yaml(config_path)
-  
+
+  make_params <- function(
+    type = c("patents", "us_patent_citations", "inventors", "locations"),
+    ids = NULL,
+    dates = c("2023-01-01", "2024-01-01"),
+    size = 5
+  ) {
+    type <- arg_match(type)
+
+    params <- pluck("parameters", type)
+
+    pluck(params, "o", "size") <- size
+
+    if (type == "patents") {
+      pluck(params, "q", "_and", 1, "_gte", "patent_date") <- dates[[1]]
+      pluck(params, "q", "_and", 2, "_lte", "patent_date") <- dates[[2]]
+    } else {
+      pluck(params, "q", 1) <- ids
+    }
+
+    params
+  }
+
   endpoints <- pluck(config, "endpoints")
 
   make_req <- function(endpoint, params) {
@@ -70,76 +94,50 @@ make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY"),
   list(get_patents = get_patents)
 }
 
-
-make_params <- function(
-  type = c("patents", "us_patent_citations", "inventors", "locations"),
-  ids = NULL,
-  dates = c("2023-01-01", "2024-01-01"),
-  size = 5
-) {
-  config_path = "references/config.yaml"
-
-  type <- arg_match(type)
-
-  params <- read_yaml(config_path) |>
-    pluck("parameters", type)
-
-  pluck(params, "o", "size") <- size
-
-  if (type == "patents") {
-    pluck(params, "q", "_and", 1, "_gte", "patent_date") <- dates[[1]]
-    pluck(params, "q", "_and", 2, "_lte", "patent_date") <- dates[[2]]
-  } else {
-    pluck(params, "q", 1) <- ids
-  }
-
-  params
-}
-
 ## Tests ----
 
 # source("lse_diss/data/api_client.R")
-# 
+#
 # library(dplyr)
 # library(tidyr)
-# 
+#
 # client <- make_client()
 # get_patents <- client$get_patents
-# 
+#
 # patent_param <- make_params("patents", dates = c("2021-01-01", "2022-01-01"))
 # patents <- get_patents("patents", patent_param, max_reqs = 7)
-# 
+#
 # patents_df <- patents |>
 #   map(\(x) discard_at(x, "assignees")) |>
 #   bind_rows()
-# 
+#
 # inventor_ids <- patents_df |>
 #   hoist("inventors", "inventor_id") |>
 #   pull(inventor_id) |>
 #   unique()
-# 
+#
 # inventor_params <- make_params("inventors", size = 10, ids = inventor_ids)
-# 
+#
 # inventors <- get_patents("inventors", inventor_params, max_reqs = 7)
-# 
+#
 # location_ids <- inventors |>
 #   bind_rows() |>
 #   mutate(location_id = basename(inventor_lastknown_location)) |>
 #   pull(location_id) |>
 #   unique()
-# 
+#
 # location_params <- make_params("locations", ids = location_ids, size = 3)
-# 
+#
 # locations <- get_patents("locations", location_params, max_reqs = 7)
-# 
+#
 # patent_ids <- patents_df |>
 #   pull(patent_id) |>
 #   unique()
-# 
+#
 # citations_params <- make_params("us_patent_citations", ids = patent_ids, size = 3)
-# 
+#
 # citations <- get_patents("us_patent_citations", citations_params, max_reqs = 3)
-# 
+#
 # final_df <- inventors |>
 #   bind_rows() |>
 #   right_join(

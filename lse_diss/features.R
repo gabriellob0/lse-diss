@@ -41,18 +41,22 @@ make_dates <- function(date_range) {
   intervals
 }
 
-make_patents <- function(dates) {
+make_patents <- function(
+  api_client = NULL,
+  dates,
+  path = path("data", "raw", "patents")
+) {
   if (!codec_is_available("zstd")) {
     stop("Change parquet compression to available type")
   }
 
-  base_path <- path("data", "raw", "patents")
-  dir_create(base_path)
+  dir_create(path)
 
   file_name <- paste(dates, collapse = "_to_")
 
-  patents_resp <- client$get_patents(
-    make_params("patents", dates = dates, size = 1000)
+  patents_resp <- api_client$get_patents(
+    make_params("patents", dates = dates, size = 1000),
+    max_reqs = Inf
   )
 
   # build assignee dataset and filter
