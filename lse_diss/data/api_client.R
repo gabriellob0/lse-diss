@@ -5,19 +5,17 @@ library(purrr)
 library(rlang)
 library(yaml)
 
-make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
+make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY"), 
+                        config_path = "references/config.yaml") {
   if (identical(api_key, "")) {
     stop(
       "No API key found, please create PATENTSVIEW_API_KEY environmental variable"
     )
   }
-
-  ENDPOINTS <- list(
-    patents = "patent",
-    us_patent_citations = "patent/us_patent_citation/",
-    inventors = "inventor",
-    locations = "location"
-  )
+  
+  config <- read_yaml(config_path)
+  
+  endpoints <- pluck(config, "endpoints")
 
   make_req <- function(endpoint, params) {
     request("https://search.patentsview.org") |>
@@ -56,7 +54,7 @@ make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
   ) {
     type <- arg_match(type)
 
-    first_req <- make_req(ENDPOINTS[[type]], params)
+    first_req <- make_req(endpoints[[type]], params)
 
     resps <- req_perform_iterative(
       first_req,
@@ -74,7 +72,6 @@ make_client <- function(api_key = Sys.getenv("PATENTSVIEW_API_KEY")) {
 
 
 make_params <- function(
-  mode = c("default", "production"),
   type = c("patents", "us_patent_citations", "inventors", "locations"),
   ids = NULL,
   dates = c("2023-01-01", "2024-01-01"),
@@ -82,11 +79,10 @@ make_params <- function(
 ) {
   config_path = "references/config.yaml"
 
-  mode <- arg_match(mode)
   type <- arg_match(type)
 
   params <- read_yaml(config_path) |>
-    pluck(mode, type)
+    pluck("parameters", type)
 
   pluck(params, "o", "size") <- size
 
@@ -100,41 +96,60 @@ make_params <- function(
   params
 }
 
-# Tests ----
+## Tests ----
 
+# source("lse_diss/data/api_client.R")
+# 
+# library(dplyr)
+# library(tidyr)
+# 
 # client <- make_client()
 # get_patents <- client$get_patents
-#
-# patent_param <- make_params("default", "patents", dates = c("2021-01-01", "2022-01-01"))
+# 
+# patent_param <- make_params("patents", dates = c("2021-01-01", "2022-01-01"))
 # patents <- get_patents("patents", patent_param, max_reqs = 7)
-#
+# 
 # patents_df <- patents |>
 #   map(\(x) discard_at(x, "assignees")) |>
 #   bind_rows()
-#
+# 
 # inventor_ids <- patents_df |>
 #   hoist("inventors", "inventor_id") |>
 #   pull(inventor_id) |>
 #   unique()
-#
-# inventor_params <- make_params("default", "inventors", size = 10, ids = inventor_ids)
-#
+# 
+# inventor_params <- make_params("inventors", size = 10, ids = inventor_ids)
+# 
 # inventors <- get_patents("inventors", inventor_params, max_reqs = 7)
-#
+# 
 # location_ids <- inventors |>
 #   bind_rows() |>
 #   mutate(location_id = basename(inventor_lastknown_location)) |>
 #   pull(location_id) |>
 #   unique()
-#
-# location_params <- make_params("default", "locations", ids = location_ids, size = 3)
-#
+# 
+# location_params <- make_params("locations", ids = location_ids, size = 3)
+# 
 # locations <- get_patents("locations", location_params, max_reqs = 7)
-#
+# 
 # patent_ids <- patents_df |>
 #   pull(patent_id) |>
 #   unique()
-#
-# citations_params <- make_params("default", "us_patent_citations", ids = patent_ids, size = 3)
-#
+# 
+# citations_params <- make_params("us_patent_citations", ids = patent_ids, size = 3)
+# 
 # citations <- get_patents("us_patent_citations", citations_params, max_reqs = 3)
+# 
+# final_df <- inventors |>
+#   bind_rows() |>
+#   right_join(
+#     patents_df |> hoist("inventors", "inventor_id"),
+#     by = join_by(inventor_id)
+#   ) |>
+#   mutate(location_id = basename(inventor_lastknown_location)) |>
+#   left_join(
+#     locations |> bind_rows(),
+#     by = join_by(location_id)
+#   ) |>
+#   select(inventor_id, patent_id, location_id, patent_date, patent_abstract, location_latitude, location_longitude) |>
+#   filter(if_all(everything(), \(x) !is.na(x)))

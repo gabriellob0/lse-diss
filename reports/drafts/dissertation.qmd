@@ -1,5 +1,34 @@
 ---
-title: "dissertation"
+title: "Title Here"
 format: typst
 ---
 
+## Abstract
+
+Abstract Text
+
+## Introduction
+
+Literature review? I should probably motivate the paper here.
+
+There are two key aspects that need to be considered. The previous papers and the methodological criticism.
+
+Then, I might want to explain
+
+## Data
+
+How I constructed the sample.
+
+Summary Statistics
+
+## Empirical strategy
+
+I think I can use typst math rather than latex one.
+
+```{=typst}
+$ A = pi r^2 $
+```
+
+## Results
+
+## Conclusion

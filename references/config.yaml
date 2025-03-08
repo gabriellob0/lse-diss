@@ -1,4 +1,9 @@
-default:
+endpoints:
+  patents: patent
+  us_patent_citations: patent/us_patent_citation/
+  inventors: inventor
+  locations: location
+parameters:
   patents:
     q:
       _and:
@@ -57,4 +62,3 @@ default:
       - location_id: asc
     o:
       size: null
-production: null

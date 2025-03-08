@@ -8,12 +8,16 @@ I want to analyse the extent of geographic concentration in patent citations, us
 
 ## Roadmap
 
-The API seems to be having some 429 problems, even with retries and throtles. I have implemented a large manual system sleep time that solves it for now, but it is something to watch out. Also, on the 12 of February they will do some updates to the API.
+For this branch I finish making the changes I wanted to the api client, so I just need to incorporate it more production level in features and main.
+
+I also need to do more work on what data I am getting. I should include all data I am filtering on just to be sure. But might be worth to test it.
+
+Check again: The API seems to be having some 429 problems, even with retries and throtles. I have implemented a large manual system sleep time that solves it for now, but it is something to watch out. Also, on the 12 of February they will do some updates to the API.
 
 The next steps should most likely be:
 
-1. Code the patents ingestions, fetch citations, and build the originating-citing dataset.
-2. Move some of the confings (e.g., endpoints) and parameters to a reference files. The configs could be ingested by the client and the params by the make params function.
+1. Update shit stuff in endnote.
+2. Code the patents ingestions, fetch citations, and build the originating-citing dataset.
 
 Scaling strategy:
 
