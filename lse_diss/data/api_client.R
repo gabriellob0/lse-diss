@@ -16,6 +16,8 @@ make_client <- function(
   }
 
   config <- read_yaml(config_path)
+  
+  endpoints <- pluck(config, "endpoints")
 
   make_params <- function(
     type = c("patents", "us_patent_citations", "inventors", "locations"),
@@ -38,8 +40,6 @@ make_client <- function(
 
     params
   }
-
-  endpoints <- pluck(config, "endpoints")
 
   make_req <- function(endpoint, params) {
     request("https://search.patentsview.org") |>

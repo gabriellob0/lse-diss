@@ -10,7 +10,7 @@ dates <- make_dates(c("2000-01-01", "2005-01-01"))
 
 # I tested this with map for some reason, but should work with walk
 dates |>
-  walk(\(x) make_patents(dates = x), .progress = TRUE)
+  walk(\(x) make_patents(client, dates = x), .progress = TRUE)
 
 # build originating patent dataset
 #originating <-
