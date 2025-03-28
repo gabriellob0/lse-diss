@@ -16,7 +16,7 @@ make_client <- function(
   }
 
   config <- read_yaml(config_path)
-  
+
   endpoints <- pluck(config, "endpoints")
 
   make_params <- function(
@@ -59,7 +59,7 @@ make_client <- function(
     }
 
     total_hits <- pluck(data, "total_hits")
-    Sys.sleep(5) # throttle stopped working, so I added this
+    #Sys.sleep(5) # throttle stopped working, so I added this
 
     signal_total_pages(ceiling(total_hits / 1000))
 

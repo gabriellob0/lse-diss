@@ -31,6 +31,7 @@ make_dates <- function(date_range) {
 
   # Handle remainder if exists
   remainder_start <- start_date + years(n_intervals * 2)
+
   if (remainder_start < end_date) {
     intervals <- c(
       intervals,
@@ -51,32 +52,40 @@ make_patents <- function(
   }
 
   dir_create(fpath)
-
   file_name <- paste(dates, collapse = "_to_")
 
-  patents_resp <- api_client$get_patents(
-    make_params("patents", dates = dates, size = 1000),
-    max_reqs = Inf
-  )
+  get_patents <- api_client$get_patents
+  make_params <- api_client$make_params
+
+  patent_param <- make_params("patents", dates = dates, size = 100)
+  patents_resp <- get_patents("patents", patent_param, max_reqs = Inf)
 
   # build assignee dataset and filter
   assignees <- patents_resp |>
     map(\(x) discard_at(x, "inventors")) |>
     bind_rows() |>
-    select(patent_id, assignees) |>
     unnest_wider(assignees) |>
     group_by(patent_id) |>
     filter(n() == 1, assignee_type == 2, assignee_country == "US") |>
     ungroup() |>
-    mutate(patent_id, assignee_id = basename(assignee), .keep = "none")
+    select(patent_id, assignee_id, assignee_organization, assignee_location_id)
 
-  # build patent dataset join to assignee
+  # build patent dataset and join to assignee
   patents <- patents_resp |> # TODO: test for matching size
     map(\(x) discard_at(x, "assignees")) |>
     bind_rows() |>
-    hoist(inventors, "inventor") |>
-    mutate(inventor_id = basename(inventor)) |>
-    select(-inventors) |>
+    unnest_wider(inventors) |>
+    filter(inventor_country == "US") |>
+    select(
+      patent_id,
+      patent_date,
+      patent_abstract,
+      patent_earliest_application_date,
+      patent_num_times_cited_by_us_patents,
+      inventor_id,
+      inventor_location_id,
+      inventor_sequence
+    ) |>
     right_join(assignees, by = join_by(patent_id)) |>
     distinct()
 

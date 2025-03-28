@@ -22,8 +22,10 @@ parameters:
     f:
       - patent_id
       - patent_date
+      - patent_earliest_application_date
       - patent_abstract
       - patent_num_times_cited_by_us_patents
+      - patent_type
       - inventors
       - assignees
     s:
