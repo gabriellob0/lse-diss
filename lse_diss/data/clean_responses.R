@@ -71,7 +71,7 @@ make_patents <- function(
     select(patent_id, assignee_id, assignee_organization, assignee_location_id)
 
   # build patent dataset and join to assignee
-  patents <- patents_resp |> # TODO: test for matching size
+  patents <- patents_resp |>
     map(\(x) discard_at(x, "assignees")) |>
     bind_rows() |>
     unnest_wider(inventors) |>

@@ -46,7 +46,7 @@ make_client <- function(
       req_url_path("api", "v1", endpoint) |>
       req_headers("X-Api-Key" = api_key) |>
       req_throttle(45 / 60) |>
-      req_retry() |>
+      req_retry(max_tries = 20) |>
       req_body_json(compact(params))
   }
 
@@ -59,9 +59,8 @@ make_client <- function(
     }
 
     total_hits <- pluck(data, "total_hits")
-    #Sys.sleep(5) # throttle stopped working, so I added this
 
-    signal_total_pages(ceiling(total_hits / 1000))
+    signal_total_pages(ceiling(total_hits / 100))
 
     id_field <- names(pluck(req, "body", "data", "s", 1))
 
