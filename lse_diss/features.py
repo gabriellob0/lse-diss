@@ -76,13 +76,9 @@ def clean_patents(raw_path, clean_path):
             .filter(pl.col("patent_date").is_between(start_date, end_date))
         )
 
-        deduplicated_patents = (
-            raw_patents
-            .sort(
-                ["patent_id", "patent_date", "inventor_sequence"]
-            )
-            .unique(["patent_id", "inventor_id", "inventor_location_id"], keep="first")
-        )
+        deduplicated_patents = raw_patents.sort(
+            ["patent_id", "patent_date", "inventor_sequence"]
+        ).unique(["patent_id", "inventor_id", "inventor_location_id"], keep="first")
 
         inventor_locations = (
             deduplicated_patents.with_columns(
@@ -100,12 +96,72 @@ def clean_patents(raw_path, clean_path):
         )
 
         (
-            deduplicated_patents
-            .join(
+            deduplicated_patents.join(
                 inventor_locations, on="patent_id", how="left", validate="m:1"
-            )
-            .sink_parquet(path)
+            ).sink_parquet(path)
         )
+
+
+def create_treatment(patents_path, citations_path):
+    # TODO: check data availability on citation_category for year before 2002
+
+    patents = (
+        pl.scan_parquet(patents_path)
+        .select("patent_id", "patent_date", "inventor_id", "assignee_id")
+        .group_by("patent_id")
+        .agg(pl.col("inventor_id"), pl.col("assignee_id"), pl.first("patent_date"))
+    )
+
+    originating = patents.filter(
+        pl.col("patent_date").is_between(pl.date(2000, 1, 1), pl.date(2000, 2, 1))
+    )
+    originating_ids = originating.select("patent_id").unique().collect().to_series()
+
+    citations = (
+        pl.scan_parquet(citations_path)
+        .filter(
+            pl.col("citation_patent_id").is_in(originating_ids)  # ,
+            # citation_category = "cited by applicant"
+        )
+        .select("citation_patent_id", "patent_id", "citation_category")
+        .rename(
+            {
+                "citation_patent_id": "originating_patent_id",
+                "patent_id": "citing_patent_id",
+            }
+        )
+        .unique()
+    )
+
+    pairs = (
+        originating.join(
+            citations,
+            left_on="patent_id",
+            right_on="originating_patent_id",
+            validate="1:m",
+        )
+        .join(
+            patents, left_on="citing_patent_id", right_on="patent_id", suffix="_citing"
+        )
+        .filter(
+            pl.col("inventor_id")
+            .list.set_intersection("inventor_id_citing")
+            .list.len()
+            .eq(0),
+            pl.col("assignee_id")
+            .list.set_intersection("assignee_id_citing")
+            .list.len()
+            .eq(0),
+            # TODO: there is something weird going on here, no pairs within 10 years distance
+            # example, 7162303 should be here (it was removed because it was cited by other)
+            # TODO: tally citations by citation_category
+            pl.col("patent_date_citing").is_between(
+                pl.date(2000, 1, 1), pl.date(2005, 1, 1)
+            ),
+        )
+    )
+
+    pairs.collect()
 
 
 data_path = Path("data")
@@ -115,46 +171,3 @@ citations_path = data_path / "raw" / "bulk_downloads" / "g_us_patent_citation.pa
 
 validate_patents(raw_patents_path)
 clean_patents(raw_patents_path, clean_patents_path)
-
-
-# # path for bulk downloaded data
-# base_path = Path("data", "raw", "bulk_downloads")
-# patents_path = base_path / "g_patent.parquet"
-# assignee_path = base_path / "g_assignee_disambiguated.parquet"
-# locations_path = base_path / "g_locations"
-
-# pl.scan_parquet(patents_path).collect_schema()
-# pl.scan_parquet(assignee_path).collect_schema()
-
-# assignees = (
-#     pl.scan_parquet(assignee_path)
-#     .with_columns(pl.len().over("patent_id").alias("assignee_count"))
-#     .filter(
-#         pl.col("assignee_count") == 1,
-#         pl.col("assignee_type") == "2"
-#     )
-# )
-
-# locations = (
-
-# )
-
-# q = (
-#     pl.scan_parquet(patents_path)
-#     .with_columns(pl.col("patent_date").str.to_date())
-#     .filter(
-#         pl.col("patent_type") == "utility",
-#         pl.col("patent_date").is_between(pl.date(2000, 1, 1), pl.date(2000, 12, 31)),
-#         pl.col("withdrawn") == 0
-#     )
-#     .join(assignees, on="patent_id", how="inner")
-#     .select(["patent_id", "patent_title", "assignee_id", "location_id"])
-# )
-
-# df = q.collect()
-
-# df.shape
-# df.schema
-# df.head(5)
-
-# df.shape[0] == df.unique().shape[0]
