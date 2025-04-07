@@ -9,41 +9,44 @@ make_data <- function(client, date_range = c("2018-01-01", "2025-01-01")) {
   make_dates <- function(date_range) {
     start_date <- ymd(date_range[1])
     end_date <- ymd(date_range[2])
-    
+
     if (interval(start_date, end_date) < years(2)) {
       return(
         list(c(format(start_date, "%Y-%m-%d"), format(end_date, "%Y-%m-%d")))
       )
     }
-    
+
     # Calculate the number of complete 2-year intervals
     n_intervals <- floor(as.numeric(interval(start_date, end_date) / years(2)))
-    
+
     # Generate sequence of start dates for each interval
     interval_starts <- start_date + years(seq(0, n_intervals * 2 - 2, by = 2))
-    
+
     intervals <- map(
       interval_starts,
       \(start)
-      c(
-        format(start, "%Y-%m-%d"),
-        format(start + years(2) - days(1), "%Y-%m-%d")
-      )
+        c(
+          format(start, "%Y-%m-%d"),
+          format(start + years(2) - days(1), "%Y-%m-%d")
+        )
     )
-    
+
     # Handle remainder if exists
     remainder_start <- start_date + years(n_intervals * 2)
-    
+
     if (remainder_start < end_date) {
       intervals <- c(
         intervals,
-        list(c(format(remainder_start, "%Y-%m-%d"), format(end_date, "%Y-%m-%d")))
+        list(c(
+          format(remainder_start, "%Y-%m-%d"),
+          format(end_date, "%Y-%m-%d")
+        ))
       )
     }
-    
+
     intervals
   }
-  
+
   make_patents <- function(
     api_client = NULL,
     dates,
@@ -52,16 +55,16 @@ make_data <- function(client, date_range = c("2018-01-01", "2025-01-01")) {
     if (!codec_is_available("zstd")) {
       stop("Change parquet compression to available type")
     }
-    
+
     dir_create(fpath)
     file_name <- paste(dates, collapse = "_to_")
-    
+
     get_patents <- api_client$get_patents
     make_params <- api_client$make_params
-    
+
     patent_param <- make_params("patents", dates = dates, size = 100)
     patents_resp <- get_patents("patents", patent_param, max_reqs = Inf)
-    
+
     # build assignee dataset and filter
     assignees <- patents_resp |>
       map(\(x) discard_at(x, "inventors")) |>
@@ -70,8 +73,13 @@ make_data <- function(client, date_range = c("2018-01-01", "2025-01-01")) {
       group_by(patent_id) |>
       filter(n() == 1, assignee_type == 2, assignee_country == "US") |>
       ungroup() |>
-      select(patent_id, assignee_id, assignee_organization, assignee_location_id)
-    
+      select(
+        patent_id,
+        assignee_id,
+        assignee_organization,
+        assignee_location_id
+      )
+
     # build patent dataset and join to assignee
     patents <- patents_resp |>
       map(\(x) discard_at(x, "assignees")) |>
@@ -90,16 +98,16 @@ make_data <- function(client, date_range = c("2018-01-01", "2025-01-01")) {
       ) |>
       right_join(assignees, by = join_by(patent_id)) |>
       distinct()
-    
+
     write_parquet(
       patents,
       path(fpath, file_name, ext = "parquet"),
       compression = "zstd"
     )
   }
-  
+
   make_dates(date_range) |>
     walk(\(x) make_patents(client, dates = x), .progress = TRUE)
-  
+
   invisible(client)
 }
