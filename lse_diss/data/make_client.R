@@ -7,7 +7,7 @@ library(yaml)
 
 make_client <- function(
   api_key = Sys.getenv("PATENTSVIEW_API_KEY"),
-  config_path = "references/config.yaml"
+  config_path = "lse_diss/config.yaml"
 ) {
   if (identical(api_key, "")) {
     stop(

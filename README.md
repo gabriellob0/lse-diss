@@ -4,32 +4,27 @@ Dissertation for my MSc in Economics at the LSE.
 
 ## Overview
 
-I want to analyse the extent of geographic concentration in patent citations, using non-citing patent controls. The key idea is to improve previous estimates by matching controls using embedded patent abstracts. I might also check how this has changed over time, previous papers were mainly limitted to the NBER patent database. Patent controls seem to have been introduced by Jaffe et al., and they should have the same "technological and temporal distribution" as citing patents.
+I want to analyse the extent of geographic localisation using patent data. I use a matching estimator where non-citing patents serve as a control. The key idea is to improve control selection by using embedded patent abstracts to do the matching.
+
+I might also check how this has changed over time and if localisation persists in longer periods. Previous papers were mainly limited to the NBER patent database. Patent controls seem to have been introduced by Jaffe et al., and they should have the same "technological and temporal distribution" as citing patents.
 
 ## Roadmap
 
-For this branch I finish making the changes I wanted to the api client, so I just need to incorporate it more production level in features and main.
+The API client and the download script are working and completed. The only limitation with the current strategy is that I remove non-US inventors, which could allow some self-cites to go undetected. I also have the script to download the bulk data which is not incorporated in my main file. I intend to do so when I figure out what data I am using from the bulk downloads.
 
-I also need to do more work on what data I am getting. I should include all data I am filtering on just to be sure. But might be worth to test it.
+Ideally, these would also have some tests, but I don't think it is an immediate priority. Instead, I want to focus on validating the data. I want to have a separate validation file, should focus on missing data, duplicates, and string formatting.
 
-Check again: The API seems to be having some 429 problems, even with retries and throtles. I have implemented a large manual system sleep time that solves it for now, but it is something to watch out. Also, on the 12 of February they will do some updates to the API.
+I have done some feature engineering, primarly creating the patent location following the rule in Kerr and Kominer (2015): majority then inventor order. I think there is no harm in doing the joins by location_id at this stage in terms of compute time and memory; it should save a few lines of code down the line.
 
-The next steps should most likely be:
+I have created the code for the treatment group, so I should create the control group next. I need to decide the fixed rule that I will use and understand the Overman and Duranton strategy applied to this case.
 
-1. Update shit stuff in endnote.
-2. Code the patents ingestions, fetch citations, and build the originating-citing dataset.
+So, in no particular order:
 
-Scaling strategy:
-
-1. Pick base year - I will go with 2010 for now
-2. Download ALL abstracts IDs, inventor IDs, and some sort of date since 2010
-3. For patents in the base year, find all the citations
-4. For each citation, construct the dataset of possible controls
-5. (restrict by date, like 3 months, and remove any other citing patents)
-6. Embbed all these abstracts and do nearest neighbour search
-7. Should have a three column dataset (or maybe each group should have three patents)
-8. Create a dataset with the location of each patent (created from iventor locations)
-9. Match each dataset so I have location for all patents.
+* Tests for the API
+* Incorporate bulk downloads and features into main
+* Review citations in EndNote
+* Rework data construction table
+* Select embedding model and create control group
 
 ## Data
 
