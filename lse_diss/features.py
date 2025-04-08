@@ -3,7 +3,10 @@ from pathlib import Path
 import polars as pl
 
 
-def clean_patents(raw_path, clean_path):
+def clean_patents(
+    raw_path=Path("data", "raw", "patents"),
+    clean_path=Path("data", "interim", "patents"),
+):
     years = [
         "2000-01-01_to_2009-12-31",
         "2010-01-01_to_2019-12-31",
@@ -21,6 +24,7 @@ def clean_patents(raw_path, clean_path):
 
         raw_patents = (
             pl.scan_parquet(raw_path, low_memory=True)
+            .drop_nulls("patent_abstract")
             .with_columns(
                 pl.col(
                     ["patent_date", "patent_earliest_application_date"]
@@ -33,7 +37,7 @@ def clean_patents(raw_path, clean_path):
             ["patent_id", "patent_date", "inventor_sequence"]
         ).unique(["patent_id", "inventor_id", "inventor_location_id"], keep="first")
 
-        inventor_locations = (
+        patent_locations = (
             deduplicated_patents.with_columns(
                 pl.len().over("patent_id", "inventor_location_id").alias("count")
             )
@@ -50,9 +54,54 @@ def clean_patents(raw_path, clean_path):
 
         (
             deduplicated_patents.join(
-                inventor_locations, on="patent_id", how="left", validate="m:1"
+                patent_locations, on="patent_id", how="left", validate="m:1"
             ).sink_parquet(path)
         )
+
+
+def trim_abstracts(
+    raw_path=Path("data", "interim", "patents"),
+    clean_path=Path("data", "processed", "patents"),
+):
+    df = pl.scan_parquet(raw_path, include_file_paths="file_name")
+
+    clean_path.mkdir(parents=True, exist_ok=True)
+
+    quantiles = (
+        df.unique(["patent_id", "patent_abstract"])
+        .with_columns(pl.col("patent_abstract").str.len_chars().alias("n_chars"))
+        .select(
+            pl.quantile("n_chars", 0.01).alias("q_low"),
+            pl.quantile("n_chars", 0.99).alias("q_high"),
+        )
+        .collect()
+    )
+
+    q_low = quantiles.item(0, 0)
+    q_high = quantiles.item(0, 1)
+
+    for p in raw_path.glob("*"):
+        stem = p.stem
+        file_path = clean_path / p.name
+        print("doing: ", file_path)
+
+        abstracts = (
+            df.filter(pl.col("file_name").str.contains(stem))
+            .filter(pl.col("patent_abstract").str.len_chars().is_between(q_low, q_high))
+            .select(
+                [
+                    "patent_id",
+                    "patent_date",
+                    "patent_abstract",
+                    "patent_earliest_application_date",
+                    "inventor_id",
+                    "assignee_id",
+                    "patent_location_id",
+                ]
+            )
+        )
+
+        abstracts.sink_parquet(file_path)
 
 
 def create_treatment(patents_path, citations_path):
@@ -117,9 +166,9 @@ def create_treatment(patents_path, citations_path):
     pairs.collect()
 
 
-data_path = Path("data")
-raw_patents_path = data_path / "raw" / "patents"
-clean_patents_path = data_path / "processed" / "patents"
-citations_path = data_path / "raw" / "bulk_downloads" / "g_us_patent_citation.parquet"
+# data_path = Path("data")
+# raw_patents_path = data_path / "raw" / "patents"
+# clean_patents_path = data_path / "processed" / "patents"
+# citations_path = data_path / "raw" / "bulk_downloads" / "g_us_patent_citation.parquet"
 
-clean_patents(raw_patents_path, clean_patents_path)
+# clean_patents(raw_patents_path, clean_patents_path)

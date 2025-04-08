@@ -6,7 +6,7 @@ data_path = Path("data")
 raw_patents_path = data_path / "raw" / "patents"
 
 # TODO:
-# remove missing abstracts
+# check uniqueness of patent and abstract pairs
 
 # NOTE:
 # inventor sequence should not skip in theory, but it will since I remove foreign ones
@@ -14,6 +14,11 @@ raw_patents_path = data_path / "raw" / "patents"
 # patent_id, patent_date, patent_abstract, inventor_id, inventor_location_id,
 # inventor_sequence, assignee_id, and assignee location_id should never be missing
 
+def count_rows(path):
+    df = pl.scan_parquet(path)
+
+    count = df.select(pl.len()).collect()
+    return(count)
 
 def count_null(path):
     df = pl.scan_parquet(path)
@@ -112,3 +117,7 @@ count_null("data/raw/patents")
 check_dates("data/raw/patents")
 check_uniqueness("data/raw/patents")
 check_range("data/raw/patents")
+
+count_rows("data/raw/patents")
+count_rows("data/interim/patents")
+count_rows("data/processed/patents")
