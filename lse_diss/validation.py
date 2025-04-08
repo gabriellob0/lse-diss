@@ -14,11 +14,21 @@ raw_patents_path = data_path / "raw" / "patents"
 # patent_id, patent_date, patent_abstract, inventor_id, inventor_location_id,
 # inventor_sequence, assignee_id, and assignee location_id should never be missing
 
+
+def tally_citations(
+    path=Path("data", "raw", "bulk_downloads", "g_us_patent_citation.parquet"),
+):
+    df = pl.scan_parquet(path).group_by("citation_category").agg(pl.len()).collect()
+
+    return df
+
+
 def count_rows(path):
     df = pl.scan_parquet(path)
 
     count = df.select(pl.len()).collect()
-    return(count)
+    return count
+
 
 def count_null(path):
     df = pl.scan_parquet(path)
@@ -38,10 +48,10 @@ def count_other(path):
     missing_columns = (
         df.select(["patent_id", "patent_abstract"])
         .drop_nulls()
-        .slice(0, 3)
         .with_columns(pl.col("*").cast(pl.Utf8).str.to_lowercase())
         .filter(pl.any_horizontal(pl.col("*").is_in(missing_values)))
-        .collect_schema()
+        .select(pl.len())
+        .collect()
     )
 
     print("missing values: ", missing_columns)
@@ -113,7 +123,7 @@ def check_uniqueness(path):
 
 
 count_null("data/raw/patents")
-# count_other("data/raw/patents")
+count_other("data/processed/patents")
 check_dates("data/raw/patents")
 check_uniqueness("data/raw/patents")
 check_range("data/raw/patents")
@@ -121,3 +131,5 @@ check_range("data/raw/patents")
 count_rows("data/raw/patents")
 count_rows("data/interim/patents")
 count_rows("data/processed/patents")
+
+tally_citations()
