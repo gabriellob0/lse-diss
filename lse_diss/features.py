@@ -103,10 +103,11 @@ def trim_abstracts(
 
         abstracts.sink_parquet(file_path)
 
+
 def clean_citations(
-        patents_path = Path("data", "processed", "patents"),
-        raw_path = Path("data", "raw", "bulk_downloads", "g_us_patent_citation.parquet"),
-        clean_path = Path("data", "interim")
+    patents_path=Path("data", "processed", "patents"),
+    raw_path=Path("data", "raw", "bulk_downloads", "g_us_patent_citation.parquet"),
+    clean_path=Path("data", "interim"),
 ):
     clean_path.mkdir(parents=True, exist_ok=True)
     file_path = clean_path / "citations.parquet"
@@ -126,7 +127,11 @@ def clean_citations(
 
     citations.sink_parquet(file_path)
 
-def make_treated(patents_path, citations_path):
+
+def make_treated(
+        patents_path = Path("data", "processed", "patents"),
+        citations_path = Path("data", "interim", "citations.parquet")
+):
     # TODO: check data availability on citation_category for year before 2002
 
     patents = (
