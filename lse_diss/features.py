@@ -123,6 +123,16 @@ def clean_citations(
         .select(["patent_id", "citation_patent_id", "citation_category"])
         .join(patents, on="patent_id", how="inner")
         .join(patents, left_on="citation_patent_id", right_on="patent_id", how="inner")
+        .rename(
+            {
+                "citation_patent_id": "originating_patent_id",
+                "patent_id": "citing_patent_id",
+                "patent_earliest_application_date": "citing_application_date",
+            }
+        )
+        .select(
+            ["originating_patent_id", "citing_patent_id", "citing_application_date"]
+        )
     )
 
     citations.sink_parquet(file_path)
@@ -130,55 +140,49 @@ def clean_citations(
 
 def make_treated(
     patents_path=Path("data", "processed", "patents"),
-    citations_path=Path("data", "interim", "citations.parquet"),
-    originating_year=2000,
-    originating_duration=1,
-    treatment_duration=5,
+    citation_path=Path("data", "interim", "citations.parquet"),
+    year=2000,
+    duration=5,
 ):
-    # TODO: check data availability on citation_category for year before 2002
-    start_date = pl.date(originating_year, 1, 1)
-    originating_end_date = pl.date(originating_year, 1 + originating_duration, 1)
-    treatment_end_date = pl.date(originating_year + treatment_duration, 1, 1)
+    start_date = pl.date(year, 1, 1)
+    originating_end_date = pl.date(year, 2, 1)
+    treated_end_date = pl.date(year + duration, 1, 1)
 
     patents = (
         pl.scan_parquet(patents_path)
-        .select("patent_id", "patent_date", "inventor_id", "assignee_id")
         .group_by("patent_id")
-        .agg(pl.col("inventor_id"), pl.col("assignee_id"), pl.first("patent_date"))
+        .agg(
+            pl.col("inventor_id"),
+            pl.col("assignee_id"),
+            pl.first("patent_date"),
+            pl.first("patent_earliest_application_date"),
+            pl.first("patent_location_id"),
+        )
     )
 
-    originating = patents.filter(
+    citations = pl.scan_parquet(citation_path).select(
+        ["originating_patent_id", "citing_patent_id"]
+    )
+
+    originating_set = patents.filter(
         pl.col("patent_date").is_between(start_date, originating_end_date)
-    )
-    originating_ids = originating.select("patent_id").unique().collect().to_series()
-
-    citations = (
-        pl.scan_parquet(citations_path)
-        .filter(
-            pl.col("citation_patent_id").is_in(originating_ids)  # ,
-            # citation_category = "cited by applicant"
-        )
-        .select("citation_patent_id", "patent_id", "citation_category")
-        .rename(
-            {
-                "citation_patent_id": "originating_patent_id",
-                "patent_id": "citing_patent_id",
-            }
-        )
-        .unique()
+    ).join(
+        citations,
+        left_on="patent_id",
+        right_on="originating_patent_id",
+        validate="1:m",
     )
 
     pairs = (
-        originating.join(
-            citations,
-            left_on="patent_id",
-            right_on="originating_patent_id",
-            validate="1:m",
-        )
-        .join(
-            patents, left_on="citing_patent_id", right_on="patent_id", suffix="_citing"
+        originating_set.join(
+            patents,
+            left_on="citing_patent_id",
+            right_on="patent_id",
+            validate="m:1",
+            suffix="_citing",
         )
         .filter(
+            pl.col("patent_date_citing").is_between(start_date, treated_end_date),
             pl.col("inventor_id")
             .list.set_intersection("inventor_id_citing")
             .list.len()
@@ -190,8 +194,21 @@ def make_treated(
             # TODO: there is something weird going on here, no pairs within 10 years distance
             # example, 7162303 should be here (it was removed because it was cited by other)
             # TODO: tally citations by citation_category
-            pl.col("patent_date_citing").is_between(start_date, treatment_end_date),
         )
+        .select(
+            [
+                "patent_id",
+                "patent_location_id",
+                "citing_patent_id",
+                "patent_earliest_application_date_citing",
+                "patent_location_id_citing",
+            ]
+        )
+        .collect()
     )
 
-    pairs.collect()
+    return pairs
+
+
+def make_control(df):
+    print("a")
