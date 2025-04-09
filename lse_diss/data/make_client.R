@@ -46,7 +46,7 @@ make_client <- function(
       req_url_path("api", "v1", endpoint) |>
       req_headers("X-Api-Key" = api_key) |>
       req_throttle(45 / 60) |>
-      req_retry(max_tries = 20) |>
+      req_retry(max_tries = 200) |>
       req_body_json(compact(params))
   }
 

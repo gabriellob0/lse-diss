@@ -129,10 +129,16 @@ def clean_citations(
 
 
 def make_treated(
-        patents_path = Path("data", "processed", "patents"),
-        citations_path = Path("data", "interim", "citations.parquet")
+    patents_path=Path("data", "processed", "patents"),
+    citations_path=Path("data", "interim", "citations.parquet"),
+    originating_year=2000,
+    originating_duration=1,
+    treatment_duration=5,
 ):
     # TODO: check data availability on citation_category for year before 2002
+    start_date = pl.date(originating_year, 1, 1)
+    originating_end_date = pl.date(originating_year, 1 + originating_duration, 1)
+    treatment_end_date = pl.date(originating_year + treatment_duration, 1, 1)
 
     patents = (
         pl.scan_parquet(patents_path)
@@ -142,7 +148,7 @@ def make_treated(
     )
 
     originating = patents.filter(
-        pl.col("patent_date").is_between(pl.date(2000, 1, 1), pl.date(2000, 2, 1))
+        pl.col("patent_date").is_between(start_date, originating_end_date)
     )
     originating_ids = originating.select("patent_id").unique().collect().to_series()
 
@@ -184,18 +190,8 @@ def make_treated(
             # TODO: there is something weird going on here, no pairs within 10 years distance
             # example, 7162303 should be here (it was removed because it was cited by other)
             # TODO: tally citations by citation_category
-            pl.col("patent_date_citing").is_between(
-                pl.date(2000, 1, 1), pl.date(2005, 1, 1)
-            ),
+            pl.col("patent_date_citing").is_between(start_date, treatment_end_date),
         )
     )
 
     pairs.collect()
-
-
-# data_path = Path("data")
-# raw_patents_path = data_path / "raw" / "patents"
-# clean_patents_path = data_path / "processed" / "patents"
-# citations_path = data_path / "raw" / "bulk_downloads" / "g_us_patent_citation.parquet"
-
-# clean_patents(raw_patents_path, clean_patents_path)
