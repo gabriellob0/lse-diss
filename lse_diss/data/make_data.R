@@ -5,7 +5,7 @@ library(dplyr)
 library(tidyr)
 library(purrr)
 
-make_data <- function(client, date_range = c("2018-01-01", "2025-01-01")) {
+make_data <- function(client, date_range = c("2000-01-01", "2025-01-01")) {
   make_dates <- function(date_range) {
     start_date <- ymd(date_range[1])
     end_date <- ymd(date_range[2])
