@@ -37,8 +37,8 @@ def make_locations(
     locations.sink_parquet(save_path, mkdir=True)
 
 
-def load_patents(patents_path=Path("data", "raw", "patents")):
-    patents = pl.scan_parquet(patents_path)
+def load_patents(path=Path("data", "raw", "patents")):
+    patents = pl.scan_parquet(path)
 
     not_missing = (
         patents.with_columns(
@@ -99,6 +99,18 @@ def trim_abstracts(df):
     )
 
     return patents
+
+
+def save_patents(df, path=Path("data", "interim", "patents")):
+    path.mkdir(parents=True, exist_ok=True)
+
+    df.sink_parquet(
+        pl.PartitionMaxSize(
+            path / "patent_{part}.parquet",
+            max_size=512_000
+        )
+    )
+
 
 
 def clean_citations(
