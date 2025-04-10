@@ -204,7 +204,6 @@ def make_treated(
                 "patent_location_id_citing",
             ]
         )
-        .collect()
     )
 
     return pairs

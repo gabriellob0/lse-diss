@@ -60,7 +60,7 @@ make_client <- function(
 
     total_hits <- pluck(data, "total_hits")
 
-    signal_total_pages(ceiling(total_hits / 100))
+    signal_total_pages(ceiling(total_hits / 1000))
 
     id_field <- names(pluck(req, "body", "data", "s", 1))
 

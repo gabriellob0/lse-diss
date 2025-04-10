@@ -62,7 +62,7 @@ make_data <- function(client, date_range = c("2000-01-01", "2025-01-01")) {
     get_patents <- api_client$get_patents
     make_params <- api_client$make_params
 
-    patent_param <- make_params("patents", dates = dates, size = 100)
+    patent_param <- make_params("patents", dates = dates, size = 1000)
     patents_resp <- get_patents("patents", patent_param, max_reqs = Inf)
 
     # build assignee dataset and filter
