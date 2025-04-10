@@ -161,7 +161,7 @@ def make_treated(
     df,
     citations_path=Path("data", "interim", "citations.parquet"),
     base_year=2005,
-    duration=3,
+    duration=1,
 ):
     start_date = pl.date(base_year, 1, 1)
     end_date = pl.date(base_year + duration, 1, 1)
@@ -191,3 +191,41 @@ def make_treated(
     )
 
     return pairs
+
+
+def make_control(
+    patents,
+    treatment_pairs,
+    citation_path=Path("data", "interim", "citations.parquet"),
+    base_year=2005,
+    duration=3,
+):
+    start_date = pl.date(base_year, 1, 1)
+    end_date = pl.date(base_year + duration, 1, 1)
+
+    citations = pl.scan_parquet(citation_path).rename(
+        {"citing_patent_id": "control_id"}
+    )
+
+    all_ids = patents.filter(
+        pl.col("grant_date").is_between(start_date, end_date)
+    ).select(pl.exclude(["grant_date", "originating_dummy"]))
+
+    cross_join = (
+        treatment_pairs.join(
+            all_ids.select(["patent_id", "application_date"]),
+            left_on="citing_patent_id",
+            right_on="patent_id",
+        )
+        .join(all_ids.select(pl.col("patent_id").alias("control_id")), how="cross")
+        .filter(
+            pl.col("citing_patent_id") != pl.col("control_id"),
+            pl.col("cited_patent_id") != pl.col("control_id"),
+        )
+    )
+
+    anti_join = cross_join.join(
+        citations, on=["cited_patent_id", "control_id"], how="anti"
+    )
+
+    return anti_join.select(pl.len()).collect()
