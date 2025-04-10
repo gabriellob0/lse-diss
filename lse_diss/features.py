@@ -105,118 +105,89 @@ def save_patents(df, path=Path("data", "interim", "patents")):
     path.mkdir(parents=True, exist_ok=True)
 
     df.sink_parquet(
-        pl.PartitionMaxSize(
-            path / "patent_{part}.parquet",
-            max_size=512_000
-        )
+        pl.PartitionMaxSize(path / "patent_{part}.parquet", max_size=512_000)
     )
 
 
-
-def clean_citations(
-    patents_path=Path("data", "processed", "patents"),
-    raw_path=Path("data", "raw", "bulk_downloads", "g_us_patent_citation.parquet"),
-    clean_path=Path("data", "interim"),
+def filter_citations(
+    patents_path=Path("data", "interim", "patents"),
+    citations_path=Path(
+        "data", "raw", "bulk_downloads", "g_us_patent_citation.parquet"
+    ),
+    save_path=Path("data", "interim", "citations.parquet"),
 ):
-    clean_path.mkdir(parents=True, exist_ok=True)
-    file_path = clean_path / "citations.parquet"
+    patents = pl.scan_parquet(patents_path).select("patent_id").unique()
 
-    patents = (
-        pl.scan_parquet(patents_path)
-        .select(["patent_id", "patent_earliest_application_date"])
+    citations = (
+        pl.scan_parquet(citations_path)
+        .join(patents, on="patent_id")
+        .join(patents, left_on="citation_patent_id", right_on="patent_id")
+        # NOTE: other categories most likely do not reflect spillovers
+        .filter(
+            pl.col("citation_category").is_in(
+                ["cite by examiner", "cited by applicant", "cited by other"]
+            )
+        )
+        .select("patent_id", "citation_patent_id", "citation_category")
+        .rename(
+            {"patent_id": "citing_patent_id", "citation_patent_id": "cited_patent_id"}
+        )
         .unique()
     )
 
-    citations = (
-        pl.scan_parquet(raw_path)
-        .select(["patent_id", "citation_patent_id", "citation_category"])
-        .join(patents, on="patent_id", how="inner")
-        .join(patents, left_on="citation_patent_id", right_on="patent_id", how="inner")
-        .rename(
-            {
-                "citation_patent_id": "originating_patent_id",
-                "patent_id": "citing_patent_id",
-                "patent_earliest_application_date": "citing_application_date",
-            }
-        )
-        .select(
-            ["originating_patent_id", "citing_patent_id", "citing_application_date"]
-        )
-    )
-
-    citations.sink_parquet(file_path)
+    citations.sink_parquet(save_path)
 
 
-def make_treated(
-    patents_path=Path("data", "processed", "patents"),
-    citation_path=Path("data", "interim", "citations.parquet"),
-    year=2000,
-    duration=5,
-):
-    start_date = pl.date(year, 1, 1)
-    originating_end_date = pl.date(year, 2, 1)
-    treated_end_date = pl.date(year + duration, 1, 1)
+def make_originating(patents_path=Path("data", "interim", "patents"), base_year=2005):
+    start_date = pl.date(base_year, 1, 1)
+    end_date = pl.date(base_year, 2, 1)
 
     patents = (
         pl.scan_parquet(patents_path)
-        .group_by("patent_id")
-        .agg(
-            pl.col("inventor_id"),
-            pl.col("assignee_id"),
-            pl.first("patent_date"),
-            pl.first("patent_earliest_application_date"),
-            pl.first("patent_location_id"),
+        .group_by("patent_id", "assignee_id", "grant_date", "application_date")
+        .agg(pl.col("inventor_id"))
+        .with_columns(
+            pl.when(pl.col("grant_date").is_between(start_date, end_date))
+            .then(1)
+            .otherwise(0)
+            .alias("originating_dummy")
         )
     )
 
-    citations = pl.scan_parquet(citation_path).select(
-        ["originating_patent_id", "citing_patent_id"]
+    return patents
+
+
+def make_treated(
+    df,
+    citations_path=Path("data", "interim", "citations.parquet"),
+    base_year=2005,
+    duration=3,
+):
+    start_date = pl.date(base_year, 1, 1)
+    end_date = pl.date(base_year + duration, 1, 1)
+
+    patents = df.filter(pl.col("grant_date").is_between(start_date, end_date)).select(
+        "patent_id", "assignee_id", "inventor_id"
     )
 
-    originating_set = patents.filter(
-        pl.col("patent_date").is_between(start_date, originating_end_date)
-    ).join(
-        citations,
-        left_on="patent_id",
-        right_on="originating_patent_id",
-        validate="1:m",
+    citations = pl.scan_parquet(citations_path).select(
+        ["cited_patent_id", "citing_patent_id"]
     )
 
     pairs = (
-        originating_set.join(
-            patents,
-            left_on="citing_patent_id",
-            right_on="patent_id",
-            validate="m:1",
-            suffix="_citing",
-        )
+        df.filter(originating_dummy=1)
+        .select("patent_id", "assignee_id", "inventor_id")
+        .rename({"patent_id": "cited_patent_id"})
+        .join(citations, on="cited_patent_id", validate="1:m")
+        .join(patents, left_on="citing_patent_id", right_on="patent_id")
         .filter(
-            pl.col("patent_date_citing").is_between(start_date, treated_end_date),
+            pl.col("assignee_id") != pl.col("assignee_id_right"),
             pl.col("inventor_id")
-            .list.set_intersection("inventor_id_citing")
+            .list.set_intersection("inventor_id_right")
             .list.len()
             .eq(0),
-            pl.col("assignee_id")
-            .list.set_intersection("assignee_id_citing")
-            .list.len()
-            .eq(0),
-            # TODO: there is something weird going on here, no pairs within 10 years distance
-            # example, 7162303 should be here (it was removed because it was cited by other)
-            # TODO: tally citations by citation_category
         )
-        .select(
-            [
-                "patent_id",
-                "patent_location_id",
-                "citing_patent_id",
-                "patent_earliest_application_date_citing",
-                "patent_location_id_citing",
-            ]
-        )
+        .select("citing_patent_id", "cited_patent_id")
     )
 
     return pairs
-
-
-def make_control(df):
-    print("a")
