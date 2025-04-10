@@ -3,105 +3,102 @@ from pathlib import Path
 import polars as pl
 
 
-def clean_patents(
-    raw_path=Path("data", "raw", "patents"),
-    clean_path=Path("data", "interim", "patents"),
+def make_locations(
+    patents_path=Path("data", "raw", "patents"),
+    save_path=Path("data", "interim", "locations.parquet"),
 ):
-    years = [
-        "2000-01-01_to_2009-12-31",
-        "2010-01-01_to_2019-12-31",
-        "2020-01-01_to_2025-01-01",
-    ]
-
-    clean_path.mkdir(parents=True, exist_ok=True)
-
-    for year in years:
-        print("doing ", year)
-
-        path = clean_path / (year + ".parquet")
-
-        start_date, end_date = pl.Series(year.split("_to_")).str.to_date()
-
-        raw_patents = (
-            pl.scan_parquet(raw_path, low_memory=True)
-            .drop_nulls("patent_abstract")
-            .with_columns(
-                pl.col(
-                    ["patent_date", "patent_earliest_application_date"]
-                ).str.to_date()
-            )
-            .filter(pl.col("patent_date").is_between(start_date, end_date))
-        )
-
-        deduplicated_patents = raw_patents.sort(
-            ["patent_id", "patent_date", "inventor_sequence"]
-        ).unique(["patent_id", "inventor_id", "inventor_location_id"], keep="first")
-
-        patent_locations = (
-            deduplicated_patents.with_columns(
-                pl.len().over("patent_id", "inventor_location_id").alias("count")
-            )
-            # rule 1
-            .filter(pl.col("count") == pl.max("count").over("patent_id"))
-            # rule 2
-            .filter(
-                pl.col("inventor_sequence")
-                == pl.min("inventor_sequence").over("patent_id")
-            )
-            .select("patent_id", "inventor_location_id")
-            .rename({"inventor_location_id": "patent_location_id"})
-        )
-
-        (
-            deduplicated_patents.join(
-                patent_locations, on="patent_id", how="left", validate="m:1"
-            ).sink_parquet(path)
-        )
-
-
-def trim_abstracts(
-    raw_path=Path("data", "interim", "patents"),
-    clean_path=Path("data", "processed", "patents"),
-):
-    df = pl.scan_parquet(raw_path, include_file_paths="file_name")
-
-    clean_path.mkdir(parents=True, exist_ok=True)
-
-    quantiles = (
-        df.unique(["patent_id", "patent_abstract"])
-        .with_columns(pl.col("patent_abstract").str.len_chars().alias("n_chars"))
+    patents = (
+        pl.scan_parquet(patents_path)
+        .filter(inventor_country="US")
         .select(
-            pl.quantile("n_chars", 0.01).alias("q_low"),
-            pl.quantile("n_chars", 0.99).alias("q_high"),
+            ["patent_id", "inventor_id", "inventor_sequence", "inventor_location_id"]
         )
-        .collect()
+        # NOTE: this remove duplicate inventors with different sequence values
+        .sort(["patent_id", "inventor_sequence"])
+        .unique(["patent_id", "inventor_id", "inventor_location_id"], keep="first")
     )
 
-    q_low = quantiles.item(0, 0)
-    q_high = quantiles.item(0, 1)
+    locations = (
+        patents.with_columns(
+            pl.len().over("patent_id", "inventor_location_id").alias("count")
+        )
+        # NOTE: location rule 1
+        .filter(pl.col("count").eq(pl.max("count").over("patent_id")))
+        # NOTE: location rule 2
+        .filter(
+            pl.col("inventor_sequence").eq(
+                pl.min("inventor_sequence").over("patent_id")
+            )
+        )
+        .select(["patent_id", "inventor_location_id"])
+        .rename({"inventor_location_id": "patent_location_id"})
+    )
 
-    for p in raw_path.glob("*"):
-        stem = p.stem
-        file_path = clean_path / p.name
-        print("doing: ", file_path)
+    locations.sink_parquet(save_path, mkdir=True)
 
-        abstracts = (
-            df.filter(pl.col("file_name").str.contains(stem))
-            .filter(pl.col("patent_abstract").str.len_chars().is_between(q_low, q_high))
-            .select(
+
+def load_patents(patents_path=Path("data", "raw", "patents")):
+    patents = pl.scan_parquet(patents_path)
+
+    not_missing = (
+        patents.with_columns(
+            pl.when(pl.any_horizontal(pl.col("*").is_null()))
+            .then(1)
+            .otherwise(0)
+            .alias("missing")
+        )
+        .group_by("patent_id")
+        .agg(pl.sum("missing"))
+        .filter(missing=0)
+        .join(patents, on="patent_id", how="left", validate="1:m")
+    )
+
+    renamed = (
+        not_missing.select(
+            pl.exclude(
                 [
-                    "patent_id",
-                    "patent_date",
-                    "patent_abstract",
-                    "patent_earliest_application_date",
-                    "inventor_id",
-                    "assignee_id",
-                    "patent_location_id",
+                    "inventor_location_id",
+                    "inventor_sequence",
+                    "inventor_country",
+                    "assignee_organization",
+                    "assignee_location_id",
+                    "missing",
                 ]
             )
         )
+        .rename(
+            {
+                "patent_date": "grant_date",
+                "patent_earliest_application_date": "application_date",
+            }
+        )
+        .with_columns(pl.col(["grant_date", "application_date"]).str.to_date())
+    )
 
-        abstracts.sink_parquet(file_path)
+    # NOTE: there should be only single assignee patents, this has been checked
+    deduplicated = renamed.unique(["patent_id", "inventor_id"])
+
+    return deduplicated
+
+
+def trim_abstracts(df):
+    abstracts = (
+        df.select("patent_id", "patent_abstract")
+        .unique()
+        .with_columns(pl.col("patent_abstract").str.len_chars().alias("n_chars"))
+        # NOTE: abstracts that are too small are not informative and will not have matches, too big might exceed token limit for embedding
+        .filter(
+            pl.col("n_chars").is_between(
+                pl.quantile("n_chars", 0.01), pl.quantile("n_chars", 0.99)
+            )
+        )
+    )
+
+    patents = abstracts.select("patent_id").join(
+        df, on="patent_id", how="left", validate="1:m"
+    )
+
+    return patents
 
 
 def clean_citations(

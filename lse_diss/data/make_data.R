@@ -5,7 +5,7 @@ library(dplyr)
 library(tidyr)
 library(purrr)
 
-make_data <- function(client, date_range = c("2000-01-01", "2025-01-01")) {
+make_data <- function(client, date_range = c("2005-01-01", "2025-01-01")) {
   make_dates <- function(date_range) {
     start_date <- ymd(date_range[1])
     end_date <- ymd(date_range[2])
@@ -85,7 +85,8 @@ make_data <- function(client, date_range = c("2000-01-01", "2025-01-01")) {
       map(\(x) discard_at(x, "assignees")) |>
       bind_rows() |>
       unnest_wider(inventors) |>
-      filter(inventor_country == "US") |>
+      # TODO: I need to filter this out later
+      #filter(inventor_country == "US") |>
       select(
         patent_id,
         patent_date,
@@ -94,7 +95,8 @@ make_data <- function(client, date_range = c("2000-01-01", "2025-01-01")) {
         patent_num_times_cited_by_us_patents,
         inventor_id,
         inventor_location_id,
-        inventor_sequence
+        inventor_sequence,
+        inventor_country
       ) |>
       right_join(assignees, by = join_by(patent_id)) |>
       distinct()
