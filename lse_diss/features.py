@@ -199,6 +199,7 @@ def make_control(
     citation_path=Path("data", "interim", "citations.parquet"),
     base_year=2005,
     duration=3,
+    search_range=30,
 ):
     start_date = pl.date(base_year, 1, 1)
     end_date = pl.date(base_year + duration, 1, 1)
@@ -210,6 +211,26 @@ def make_control(
     all_ids = patents.filter(
         pl.col("grant_date").is_between(start_date, end_date)
     ).select(pl.exclude(["grant_date", "originating_dummy"]))
+
+    # TODO: since the self-cite logic is used elsewhere, I should separate this
+    # TODO: also double check if this stuff really works since its not changing the numbers
+    conflicts = (
+        patents.filter(originating_dummy=1)
+        .select("patent_id", "assignee_id", "inventor_id")
+        .rename({"patent_id": "cited_patent_id"})
+        .join(citations, on="cited_patent_id", validate="1:m")
+        .join(patents, left_on="control_id", right_on="patent_id")
+        .filter(
+            pl.any_horizontal(
+                pl.col("assignee_id") == pl.col("assignee_id_right"),
+                pl.col("inventor_id")
+                .list.set_intersection("inventor_id_right")
+                .list.len()
+                .ge(1),
+            )
+        )
+        .select("cited_patent_id", "control_id")
+    )
 
     cross_join = (
         treatment_pairs.join(
@@ -224,8 +245,26 @@ def make_control(
         )
     )
 
-    anti_join = cross_join.join(
-        citations, on=["cited_patent_id", "control_id"], how="anti"
+    anti_join = (
+        cross_join.join(citations, on=["cited_patent_id", "control_id"], how="anti")
+        .with_columns(
+            (pl.col("application_date") - pl.duration(days=search_range)).alias(
+                "min_date"
+            ),
+            (pl.col("application_date") + pl.duration(days=search_range)).alias(
+                "max_date"
+            ),
+        )
+        .select(pl.exclude("application_date"))
+        .join(all_ids, left_on="control_id", right_on="patent_id")
+        .filter(
+            pl.col("application_date").is_between(
+                pl.col("min_date"), pl.col("max_date")
+            )
+        )
+        .join(conflicts, on=["cited_patent_id", "control_id"], how="anti")
+        .select(pl.len())
+        .collect()
     )
 
-    return anti_join.select(pl.len()).collect()
+    return anti_join
