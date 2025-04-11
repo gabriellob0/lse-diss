@@ -271,7 +271,7 @@ def remove_cited(df, citations_path=Path("data", "interim", "citations.parquet")
 
 
 def save_controls(
-    patents, pairs, duration=3, path=Path("data", "interim", "controls"), batch_size=25
+    patents, pairs, duration=3, path=Path("data", "interim", "controls"), batch_size=50
 ):
     path.mkdir(parents=True, exist_ok=True)
 
@@ -281,9 +281,9 @@ def save_controls(
         file_name = path / (f"controls_{i}" + ".parquet")
 
         start = i * batch_size
-        end = min((i + 1) * batch_size, total_rows)
+        length = min(batch_size, total_rows - start)
 
-        sliced_pairs = pairs.slice(start, end)
+        sliced_pairs = pairs.slice(start, length)
         potential_controls = make_controls(patents, sliced_pairs, duration=duration)
         controls = remove_cited(potential_controls)
         controls.sink_parquet(file_name)
