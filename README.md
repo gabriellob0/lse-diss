@@ -10,7 +10,9 @@ I might also check how this has changed over time and if localisation persists i
 
 ## Roadmap
 
-The API client and the download script are working and completed. The only limitation with the current strategy is that I remove non-US inventors, which could allow some self-cites to go undetected. I also have the script to download the bulk data which is not incorporated in my main file. I intend to do so when I figure out what data I am using from the bulk downloads.
+The API client and the download script are working and completed.
+
+The script to download the bulk data which is not incorporated in my main file. I intend to do so when I figure out what data I am using from the bulk downloads.
 
 Ideally, these would also have some tests, but I don't think it is an immediate priority. Instead, I want to focus on validating the data. I want to have a separate validation file, should focus on missing data, duplicates, and string formatting.
 
@@ -21,6 +23,7 @@ I have created the code for the treatment group, so I should create the control 
 So, in no particular order:
 
 * Tests for the API
+* Move bulk links to config
 * Incorporate bulk downloads and features into main
 * Review citations in EndNote
 * Rework data construction table

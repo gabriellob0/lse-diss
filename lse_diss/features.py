@@ -166,6 +166,7 @@ def make_treated(
     start_date = pl.date(base_year, 1, 1)
     end_date = pl.date(base_year + duration, 1, 1)
 
+    # NOTE: potential treatment members
     patents = df.filter(pl.col("grant_date").is_between(start_date, end_date)).select(
         "patent_id", "assignee_id", "inventor_id"
     )
@@ -193,78 +194,75 @@ def make_treated(
     return pairs
 
 
-def make_control(
+def make_controls(
     patents,
-    treatment_pairs,
-    citation_path=Path("data", "interim", "citations.parquet"),
+    treated,
     base_year=2005,
-    duration=3,
+    duration=1,
     search_range=30,
 ):
     start_date = pl.date(base_year, 1, 1)
     end_date = pl.date(base_year + duration, 1, 1)
 
-    citations = pl.scan_parquet(citation_path).rename(
-        {"citing_patent_id": "control_id"}
+    potential_controls = (
+        patents.filter(pl.col("grant_date").is_between(start_date, end_date))
+        .select(pl.exclude(["grant_date", "originating_dummy"]))
+        .select(pl.all().name.prefix("control_"))
     )
 
-    all_ids = patents.filter(
-        pl.col("grant_date").is_between(start_date, end_date)
-    ).select(pl.exclude(["grant_date", "originating_dummy"]))
-
-    # TODO: since the self-cite logic is used elsewhere, I should separate this
-    # TODO: also double check if this stuff really works since its not changing the numbers
-    conflicts = (
-        patents.filter(originating_dummy=1)
-        .select("patent_id", "assignee_id", "inventor_id")
-        .rename({"patent_id": "cited_patent_id"})
-        .join(citations, on="cited_patent_id", validate="1:m")
-        .join(patents, left_on="control_id", right_on="patent_id")
-        .filter(
-            pl.any_horizontal(
-                pl.col("assignee_id") == pl.col("assignee_id_right"),
-                pl.col("inventor_id")
-                .list.set_intersection("inventor_id_right")
-                .list.len()
-                .ge(1),
-            )
+    citing = (
+        treated.join(
+            patents.select(
+                pl.col(["patent_id", "application_date"]).name.prefix("citing_")
+            ),
+            on="citing_patent_id",
         )
-        .select("cited_patent_id", "control_id")
-    )
-
-    cross_join = (
-        treatment_pairs.join(
-            all_ids.select(["patent_id", "application_date"]),
-            left_on="citing_patent_id",
-            right_on="patent_id",
-        )
-        .join(all_ids.select(pl.col("patent_id").alias("control_id")), how="cross")
-        .filter(
-            pl.col("citing_patent_id") != pl.col("control_id"),
-            pl.col("cited_patent_id") != pl.col("control_id"),
-        )
-    )
-
-    anti_join = (
-        cross_join.join(citations, on=["cited_patent_id", "control_id"], how="anti")
         .with_columns(
-            (pl.col("application_date") - pl.duration(days=search_range)).alias(
+            (pl.col("citing_application_date") - pl.duration(days=search_range)).alias(
                 "min_date"
             ),
-            (pl.col("application_date") + pl.duration(days=search_range)).alias(
+            (pl.col("citing_application_date") + pl.duration(days=search_range)).alias(
                 "max_date"
             ),
         )
-        .select(pl.exclude("application_date"))
-        .join(all_ids, left_on="control_id", right_on="patent_id")
-        .filter(
-            pl.col("application_date").is_between(
-                pl.col("min_date"), pl.col("max_date")
-            )
-        )
-        .join(conflicts, on=["cited_patent_id", "control_id"], how="anti")
-        .select(pl.len())
-        .collect()
+        .select(pl.exclude("citing_application_date"))
     )
 
-    return anti_join
+    cited = citing.join(
+        patents.select(
+            pl.col(["patent_id", "assignee_id", "inventor_id"]).name.prefix("cited_")
+        ),
+        on="cited_patent_id",
+    )
+
+    # TODO: consider non-equi join, but the engine might do it for me
+    cross_join = (
+        cited.join(potential_controls, how="cross")
+        .filter(
+            pl.col("citing_patent_id") != pl.col("control_patent_id"),
+            pl.col("cited_patent_id") != pl.col("control_patent_id"),
+            pl.col("cited_assignee_id") != pl.col("control_assignee_id"),
+            pl.col("control_application_date").is_between(
+                pl.col("min_date"), pl.col("max_date")
+            ),
+            pl.col("cited_inventor_id")
+            .list.set_intersection("control_inventor_id")
+            .list.len()
+            .eq(0),
+        )
+        .select(["citing_patent_id", "cited_patent_id", "control_patent_id"])
+    )
+
+    return cross_join
+
+
+def remove_cited(df, citations_path=Path("data", "interim", "citations.parquet")):
+    citations = pl.scan_parquet(citations_path).select(
+        pl.col("cited_patent_id"), pl.col("citing_patent_id").alias("control_patent_id")
+    )
+
+    controls = df.join(
+        citations, on=["cited_patent_id", "control_patent_id"], how="anti"
+    )
+
+    return controls

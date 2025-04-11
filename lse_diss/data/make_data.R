@@ -86,7 +86,6 @@ make_data <- function(client, date_range = c("2005-01-01", "2025-01-01")) {
       bind_rows() |>
       unnest_wider(inventors) |>
       # TODO: I need to filter this out later
-      #filter(inventor_country == "US") |>
       select(
         patent_id,
         patent_date,
