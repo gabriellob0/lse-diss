@@ -161,7 +161,7 @@ def make_treated(
     df,
     citations_path=Path("data", "interim", "citations.parquet"),
     base_year=2005,
-    duration=1,
+    duration=2,
 ):
     start_date = pl.date(base_year, 1, 1)
     end_date = pl.date(base_year + duration, 1, 1)
@@ -198,7 +198,7 @@ def make_controls(
     patents,
     treated,
     base_year=2005,
-    duration=1,
+    duration=2,
     search_range=30,
 ):
     start_date = pl.date(base_year, 1, 1)
