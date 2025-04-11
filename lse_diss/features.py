@@ -275,13 +275,14 @@ def save_controls(
 ):
     path.mkdir(parents=True, exist_ok=True)
 
-    total_rows = ceil(pairs.select(pl.len()).collect().item(0, 0) / batch_size)
+    total_pairs = pairs.select(pl.len()).collect().item(0, 0)
+    total_batches = ceil(total_pairs / batch_size)
 
-    for i in tqdm(range(total_rows), desc="Processing batches", unit="batch"):
+    for i in tqdm(range(total_batches), desc="Processing batches", unit="batch"):
         file_name = path / (f"controls_{i}" + ".parquet")
 
         start = i * batch_size
-        length = min(batch_size, total_rows - start)
+        length = min(batch_size, total_pairs - start)
 
         sliced_pairs = pairs.slice(start, length)
         potential_controls = make_controls(patents, sliced_pairs, duration=duration)
