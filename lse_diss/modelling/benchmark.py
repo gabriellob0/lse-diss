@@ -13,8 +13,7 @@ def print_memory_usage():
     print(f"Memory usage: {mem_info.rss / (1024 * 1024):.2f} MB")
 
 
-print("cpu count")
-psutil.cpu_count()
+print("cpu count", psutil.cpu_count())
 
 print_memory_usage()
 
