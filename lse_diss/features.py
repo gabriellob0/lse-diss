@@ -287,3 +287,27 @@ def save_controls(
         potential_controls = make_controls(patents, sliced_pairs, duration=duration)
         controls = remove_cited(potential_controls)
         controls.sink_parquet(file_name)
+
+
+def filter_abstracts(
+        patents_path=Path("data", "interim", "patents"),
+        controls_path=Path("data", "interim", "controls"),
+        save_path = Path("data", "interim", "abstracts.parquet")
+):
+    patents = pl.scan_parquet(patents_path).select("patent_id", "patent_abstract").unique()
+
+    controls = (
+        pl.scan_parquet(controls_path)
+        .select("citing_patent_id", "control_patent_id")
+        .unpivot()
+        .select("value")
+        .unique()
+    )
+
+    abstracts = (
+        patents
+        .join(controls, left_on="patent_id", right_on="value", how="inner")
+        .with_row_index()
+    )
+
+    abstracts.sink_parquet(save_path)

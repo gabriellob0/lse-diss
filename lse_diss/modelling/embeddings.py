@@ -1,30 +1,33 @@
+from math import ceil
 from pathlib import Path
 
 import polars as pl
 from sentence_transformers import SentenceTransformer
-from voyager import Index, Space
 
-patents = (
-    pl.scan_parquet(Path("data", "interim", "patents"))
-    .slice(0, 10000)
-    .select(["patent_id", "patent_abstract"])
-    .unique()
-    .collect()
+BATCH_SIZE = 20000
+OUTPUT_DIR = Path("data", "processed", "embeddings")
+OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
+
+model = SentenceTransformer(
+    "nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True, truncate_dim=256
 )
 
-abstracts = patents.get_column("patent_abstract").to_list()
+patents = pl.scan_parquet(Path("data", "interim", "abstracts.parquet"))
 
-model = SentenceTransformer("nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True, truncate_dim=256)
-embeddings = model.encode(abstracts, prompt_name="passage", show_progress_bar=True)
+total_rows = patents.select(pl.len()).collect().item(0, 0)
+total_batches = ceil(total_rows / BATCH_SIZE)
 
-dimension = embeddings.shape[1]
-index = Index(Space.Cosine, num_dimensions=dimension)
+for i in range(total_batches):
+    start = i * BATCH_SIZE
+    end = min((i + 1) * BATCH_SIZE, total_rows)
 
-index.add_items(embeddings)
-index.save("data/interim/index.voy")
+    file_path = OUTPUT_DIR / f"embedded_abstracts_{i}.parquet"
 
-neighbors, distances = index.query(embeddings[5], k=3)
+    sliced_patents = patents.slice(start, end).collect()
+    abstracts = sliced_patents.get_column("patent_abstract").to_list()
 
-abstracts[5]
-abstracts[1821]
-abstracts[177]
+    embeddings = model.encode(abstracts, prompt_name="passage", show_progress_bar=True)
+
+    sliced_patents.select(["index", "patent_id"]).with_columns(
+        embedding=embeddings
+    ).write_parquet(file_path)
