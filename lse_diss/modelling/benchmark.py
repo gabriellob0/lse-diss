@@ -12,7 +12,7 @@ model = SentenceTransformer(
     "nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True, truncate_dim=256
 )
 
-patents = pl.scan_parquet(Path("data", "interim", "abstracts.parquet")).slice(0, size)
+patents = pl.scan_parquet(Path("data", "interim", "abstracts.parquet")).slice(0, size).collect()
 
 abstracts = patents.get_column("patent_abstract").to_list()
 
