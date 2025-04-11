@@ -39,7 +39,7 @@ def convert_files():
             ).sink_parquet(save_path)
 
 
-urls = pl.read_json("references/bulk_urls.json").to_dict()
+urls = pl.read_json("references/bulk_urls_alt.json").to_dict()
 
 # Extract URLs from the polars Series and download each file
 for name, url_series in urls.items():
