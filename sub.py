@@ -1,16 +1,20 @@
 import lse_diss.features as ft
 
-ft.make_locations()
+import polars as pl
 
-raw_patents = ft.load_patents()
-trimmed_patents = ft.trim_abstracts(raw_patents)
+#ft.make_locations()
 
-ft.save_patents(trimmed_patents)
+#raw_patents = ft.load_patents()
+#trimmed_patents = ft.trim_abstracts(raw_patents)
 
-ft.filter_citations()
+#ft.save_patents(trimmed_patents)
+
+#ft.filter_citations()
+
+program_duration=3
 
 agg_patents = ft.make_originating()
-treated_pairs = ft.make_treated(agg_patents)
+treated_pairs = ft.make_treated(agg_patents, duration=program_duration)
+treated_pairs.select(pl.len()).collect()
 
-potential_controls = ft.make_controls(agg_patents, treated_pairs)
-test = ft.remove_cited(potential_controls)
+ft.save_controls(agg_patents, treated_pairs, duration=program_duration)

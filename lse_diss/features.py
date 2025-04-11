@@ -1,6 +1,8 @@
+from math import ceil
 from pathlib import Path
 
 import polars as pl
+from tqdm import tqdm
 
 
 def make_locations(
@@ -266,3 +268,22 @@ def remove_cited(df, citations_path=Path("data", "interim", "citations.parquet")
     )
 
     return controls
+
+
+def save_controls(
+    patents, pairs, duration=3, path=Path("data", "interim", "controls"), batch_size=25
+):
+    path.mkdir(parents=True, exist_ok=True)
+
+    total_rows = ceil(pairs.select(pl.len()).collect().item(0, 0) / batch_size)
+
+    for i in tqdm(range(total_rows), desc="Processing batches", unit="batch"):
+        file_name = path / (f"controls_{i}" + ".parquet")
+
+        start = i * batch_size
+        end = min((i + 1) * batch_size, total_rows)
+
+        sliced_pairs = pairs.slice(start, end)
+        potential_controls = make_controls(patents, sliced_pairs, duration=duration)
+        controls = remove_cited(potential_controls)
+        controls.sink_parquet(file_name)
