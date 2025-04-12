@@ -80,6 +80,7 @@ def match_controls(
             on=["citing_patent_id", "voyager_index"]
         )
         .select(["citing_patent_id", "cited_patent_id", "control_patent_id"])
+        .unique()
     )
 
     print("sinking data")

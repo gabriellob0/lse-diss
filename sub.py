@@ -22,3 +22,6 @@ ft.save_controls(agg_patents, treated_pairs, duration=program_duration)
 pl.scan_parquet("data/interim/controls").select(pl.len()).collect(engine="streaming")
 
 ft.filter_abstracts()
+
+# embeddings happen here
+# ann happens here
