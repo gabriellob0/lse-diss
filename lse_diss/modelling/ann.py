@@ -29,48 +29,48 @@ def open_index(path=Path("data", "interim", "indexes", "index.voy")):
     return index
 
 
-def match_controls(
-    voyager_index,
-    controls_path=Path("data", "interim", "controls"),
-    embeddings_path=Path("data", "processed", "embeddings"),
-    save_path=Path("data", "processed", "controls.parquet"),
-):
-    potential_controls = pl.scan_parquet(controls_path)
-    indexed_embeddings = pl.scan_parquet(embeddings_path)
+def match_controls(voyager_index):
+    patents_with_embeddings = pl.scan_parquet(
+        "data/processed/embeddings"
+    ).with_row_index("voyager_index")
+    raw_controls = pl.scan_parquet("data/interim/controls")
 
-    citing_ids = potential_controls.select("citing_patent_id").unique()
-
-    n_citing = indexed_embeddings.select(pl.len()).collect().item(0, 0)
-    n_neighbours = ceil(n_citing / 100)
-    print(n_neighbours)
-
-    citing_embeddings = citing_ids.join(
-        indexed_embeddings.select(["patent_id", "embedding"]),
-        left_on="citing_patent_id",
-        right_on="patent_id",
-        how="left",
-        validate="1:1",
+    n_neighbours = (
+        patents_with_embeddings.unique("patent_id")
+        # NOTE: this is where the top 1% is defined
+        .select(pl.len() / 100)
+        .collect()
+        .item(0, 0)
     )
 
-    embeddings = citing_embeddings.collect().get_column("embedding").to_numpy()
+    print(ceil(n_neighbours))
 
-    neighbours, _ = voyager_index.query(embeddings, n_neighbours)
+    embeddings = (
+        patents_with_embeddings.select("embedding")
+        .collect()
+        .get_column("embedding")
+        .to_numpy()
+    )
 
-    citing_neighbours = (
-        citing_ids.with_columns(neighbour=neighbours)
-        .explode(pl.col("neighbour"))
+    neighbours, _ = voyager_index.query(embeddings, 2)#ceil(n_neighbours))
+
+    patents_with_neighbours = (
+        patents_with_embeddings.select("patent_id")
+        .with_columns(neighbours=neighbours)
+        .explode(pl.col("neighbours"))
+        .rename({"neighbours": "neighbour"})
+    )
+
+    controls = (
+        raw_controls.join(
+            patents_with_neighbours, left_on="citing_patent_id", right_on="patent_id"
+        )
         .join(
-            indexed_embeddings.select(["index", "patent_id"]),
-            left_on="neighbour",
-            right_on="index",
+            patents_with_embeddings.select(["patent_id", "voyager_index"]),
+            left_on="control_patent_id",
+            right_on="patent_id",
         )
-        .select(
-            pl.col("citing_patent_id"), pl.col("patent_id").alias("control_patent_id")
-        )
+        .filter(pl.col("voyager_index") == pl.col("neighbour"))
     )
 
-    controls = potential_controls.join(
-        citing_neighbours, on=["citing_patent_id", "control_patent_id"]
-    )
-
-    controls.sink_parquet(save_path)
+    controls.sink_parquet("data/processed/controls.parquet")

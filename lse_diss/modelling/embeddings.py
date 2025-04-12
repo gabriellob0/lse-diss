@@ -28,6 +28,7 @@ for i in range(total_batches):
 
     embeddings = model.encode(abstracts, prompt_name="passage", batch_size=64, show_progress_bar=True)
 
-    sliced_patents.select(["index", "patent_id"]).with_columns(
+    # NOTE: I spot checked and the order is being preserved
+    sliced_patents.select("patent_id").with_columns(
         embedding=embeddings
     ).write_parquet(file_path)

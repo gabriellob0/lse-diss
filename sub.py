@@ -24,5 +24,5 @@ pl.scan_parquet("data/interim/controls").select(pl.len()).collect(engine="stream
 
 ft.filter_abstracts()
 
-ann.create_index()
+#ann.create_index()
 ann.match_controls(ann.open_index())

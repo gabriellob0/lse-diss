@@ -308,7 +308,6 @@ def filter_abstracts(
     abstracts = (
         patents
         .join(controls, left_on="patent_id", right_on="value", how="inner")
-        .with_row_index()
     )
 
     abstracts.sink_parquet(save_path)
