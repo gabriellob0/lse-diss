@@ -57,6 +57,8 @@ def match_controls(
         .to_numpy()
     )
 
+    print("querying NNs")
+
     neighbours, _ = voyager_index.query(embeddings, ceil(n_neighbours))
 
     patents_with_neighbours = (
@@ -77,6 +79,8 @@ def match_controls(
         )
         .filter(pl.col("voyager_index") == pl.col("neighbour"))
     )
+
+    print("sinking data")
 
     controls.sink_parquet(save_path)
 
