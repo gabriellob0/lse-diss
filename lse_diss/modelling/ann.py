@@ -29,11 +29,16 @@ def open_index(path=Path("data", "interim", "indexes", "index.voy")):
     return index
 
 
-def match_controls(voyager_index):
-    patents_with_embeddings = pl.scan_parquet(
-        "data/processed/embeddings"
-    ).with_row_index("voyager_index")
-    raw_controls = pl.scan_parquet("data/interim/controls")
+def match_controls(
+    voyager_index,
+    embeddings_path=Path("data", "processed", "embeddings"),
+    controls_path=Path("data", "interim", "controls"),
+    save_path=Path("data", "processed", "controls"),
+):
+    patents_with_embeddings = pl.scan_parquet(embeddings_path).with_row_index(
+        "voyager_index"
+    )
+    raw_controls = pl.scan_parquet(controls_path)
 
     n_neighbours = (
         patents_with_embeddings.unique("patent_id")
@@ -43,7 +48,7 @@ def match_controls(voyager_index):
         .item(0, 0)
     )
 
-    print(ceil(n_neighbours))
+    print("neighbours: ", ceil(n_neighbours))
 
     embeddings = (
         patents_with_embeddings.select("embedding")
@@ -52,7 +57,7 @@ def match_controls(voyager_index):
         .to_numpy()
     )
 
-    neighbours, _ = voyager_index.query(embeddings, 2)#ceil(n_neighbours))
+    neighbours, _ = voyager_index.query(embeddings, ceil(n_neighbours))
 
     patents_with_neighbours = (
         patents_with_embeddings.select("patent_id")
@@ -73,4 +78,8 @@ def match_controls(voyager_index):
         .filter(pl.col("voyager_index") == pl.col("neighbour"))
     )
 
-    controls.sink_parquet("data/processed/controls.parquet")
+    controls.sink_parquet(save_path)
+
+
+create_index()
+match_controls(open_index())

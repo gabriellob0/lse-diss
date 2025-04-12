@@ -1,5 +1,4 @@
 import lse_diss.features as ft
-import lse_diss.modelling.ann as ann
 
 import polars as pl
 
@@ -23,6 +22,3 @@ ft.save_controls(agg_patents, treated_pairs, duration=program_duration)
 pl.scan_parquet("data/interim/controls").select(pl.len()).collect(engine="streaming")
 
 ft.filter_abstracts()
-
-#ann.create_index()
-ann.match_controls(ann.open_index())
