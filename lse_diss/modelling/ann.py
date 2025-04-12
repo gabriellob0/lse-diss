@@ -33,7 +33,7 @@ def match_controls(
     voyager_index,
     embeddings_path=Path("data", "processed", "embeddings"),
     controls_path=Path("data", "interim", "controls"),
-    save_path=Path("data", "processed", "controls"),
+    save_path=Path("data", "processed", "controls.parquet"),
 ):
     patents_with_embeddings = pl.scan_parquet(embeddings_path).with_row_index(
         "voyager_index"
