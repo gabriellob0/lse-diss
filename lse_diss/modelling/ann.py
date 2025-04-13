@@ -7,9 +7,8 @@ from voyager import Index, Space
 
 def create_index(
     embeddings_path=Path("data", "processed", "embeddings"),
-    save_path=Path("data", "interim", "indexes"),
+    save_path=Path("data", "interim"),
 ):
-    save_path.mkdir(parents=True, exist_ok=True)
     file_path = str(save_path / "index.voy")
 
     df = pl.scan_parquet(embeddings_path).collect()
@@ -22,7 +21,7 @@ def create_index(
     index.save(str(file_path))
 
 
-def open_index(path=Path("data", "interim", "indexes", "index.voy")):
+def open_index(path=Path("data", "interim", "index.voy")):
     path_str = str(path)
     with open(path_str, "rb") as f:
         index = Index.load(f)
@@ -88,6 +87,8 @@ def match_controls(
     controls.sink_parquet(save_path)
 
 
+if __name__ == "__main__":
+    create_index()
 
-#create_index()
-match_controls(open_index())
+    index = open_index()
+    match_controls(index)

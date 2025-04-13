@@ -41,35 +41,57 @@ if (dir_exists(path("data", "raw", "bulk_downloads"))) {
 
 # Features ----
 
-# 1. patents
-ft$patents$load_patents() |>
-  ft$patents$trim_abstracts() |>
-  ft$patents$save_patents()
+if (file_exists(path("data", "interim", "abstracts.parquet"))) {
+  print("abstracts exists, not running features")
+} else {
+  # 1. patents
+  ft$patents$load_patents() |>
+    ft$patents$trim_abstracts() |>
+    ft$patents$save_patents()
 
-ft$patents$filter_citations()
+  ft$patents$filter_citations()
 
-# 2. controls
-agg_patents = ft$controls$make_originating(base_year = BASE_YEAR)
-treated_pairs = ft$controls$make_treated(
-  agg_patents,
-  base_year = BASE_YEAR,
-  duration = DURATION
-)
+  # 2. controls
+  agg_patents = ft$controls$make_originating(base_year = BASE_YEAR)
+  treated_pairs = ft$controls$make_treated(
+    agg_patents,
+    base_year = BASE_YEAR,
+    duration = DURATION
+  )
 
-ft$controls$save_controls(
-  agg_patents,
-  treated_pairs,
-  duration = DURATION,
-  search_range = SEARCH_RANGE
-)
+  ft$controls$save_controls(
+    agg_patents,
+    treated_pairs,
+    duration = DURATION,
+    search_range = SEARCH_RANGE
+  )
 
-# 3. abstracts
-ft$abstracts$filter_abstracts()
+  # 3. abstracts
+  ft$abstracts$filter_abstracts()
+}
 
 # Modelling ----
 
-# 1. embeddings
-# 2. knn
-# 3. locations
+if (dir_exists(path("data", "processed", "embeddings"))) {
+  print("embeddings exists, not encoding abstracts")
+} else {
+  py_run_file(
+    path("lse_diss", "modelling", "embeddings.py"),
+    convert = FALSE
+  )
+}
+
+if (dir_exists(path("data", "processed", "embeddings"))) {
+  print("matching abstracts")
+  py_run_file(
+    path("lse_diss", "modelling", "ann.py"),
+    convert = FALSE
+  )
+} else {
+  print("no embeddings")
+  stop()
+}
 
 ft$locations$make_locations()
+ft$location$make_distances()
+

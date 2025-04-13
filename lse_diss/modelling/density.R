@@ -21,21 +21,20 @@ treated_group <- controls |>
   left_join(
     distances,
     by = c(
-      "cited_patent_id"="parent_patent_id",
-      "citing_patent_id"="child_patent_id"
+      "cited_patent_id" = "parent_patent_id",
+      "citing_patent_id" = "child_patent_id"
     )
   ) |>
   pull(distance)
 
 control_group <- controls |>
   group_by(cited_patent_id, citing_patent_id) |>
-  slice_sample(n=1) |>
+  slice_sample(n = 1) |>
   left_join(
     distances,
     by = c(
-      "cited_patent_id"="parent_patent_id",
-      "control_patent_id"="child_patent_id"
+      "cited_patent_id" = "parent_patent_id",
+      "control_patent_id" = "child_patent_id"
     )
   ) |>
   pull(distance)
-
