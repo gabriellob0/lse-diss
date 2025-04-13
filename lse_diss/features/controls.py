@@ -106,25 +106,30 @@ def make_controls(
     # Use join_where instead of cross join
     joined = cited.join_where(
         potential_controls,
-        pl.col("control_application_date") >= pl.col("min_date"),
-        pl.col("control_application_date") <= pl.col("max_date"),
-        pl.col("citing_patent_id") != pl.col("control_patent_id"),
-        pl.col("cited_patent_id") != pl.col("control_patent_id"),
-        pl.col("cited_assignee_id") != pl.col("control_assignee_id")
-    )
-    
-    # Apply inventor intersection filter after join
-    # (This operation is too complex for join_where predicates)
-    result = joined.filter(
-        pl.col("control_application_date") >= pl.col("min_date"),
-        pl.col("control_application_date") <= pl.col("max_date"),
+        pl.col("control_application_date").is_between(
+            pl.col("min_date"), pl.col("max_date")
+        ),
         pl.col("citing_patent_id") != pl.col("control_patent_id"),
         pl.col("cited_patent_id") != pl.col("control_patent_id"),
         pl.col("cited_assignee_id") != pl.col("control_assignee_id"),
         pl.col("cited_inventor_id")
         .list.set_intersection(pl.col("control_inventor_id"))
         .list.len()
-        .eq(0)
+        .eq(0),
+    )
+
+    # filters just to be safe
+    result = joined.filter(
+        pl.col("control_application_date").is_between(
+            pl.col("min_date"), pl.col("max_date")
+        ),
+        pl.col("citing_patent_id") != pl.col("control_patent_id"),
+        pl.col("cited_patent_id") != pl.col("control_patent_id"),
+        pl.col("cited_assignee_id") != pl.col("control_assignee_id"),
+        pl.col("cited_inventor_id")
+        .list.set_intersection(pl.col("control_inventor_id"))
+        .list.len()
+        .eq(0),
     ).select(["citing_patent_id", "cited_patent_id", "control_patent_id"])
 
     return result
@@ -143,7 +148,12 @@ def remove_cited(df, citations_path=Path("data", "interim", "citations.parquet")
 
 
 def save_controls(
-    patents, pairs, duration=3, search_range=30, path=Path("data", "interim", "controls"), batch_size=50
+    patents,
+    pairs,
+    duration=3,
+    search_range=30,
+    path=Path("data", "interim", "controls"),
+    batch_size=50,
 ):
     path.mkdir(parents=True, exist_ok=True)
 
@@ -157,6 +167,8 @@ def save_controls(
         length = min(batch_size, total_pairs - start)
 
         sliced_pairs = pairs.slice(start, length)
-        potential_controls = make_controls(patents, sliced_pairs, duration=duration, search_range=search_range)
+        potential_controls = make_controls(
+            patents, sliced_pairs, duration=duration, search_range=search_range
+        )
         controls = remove_cited(potential_controls)
         controls.sink_parquet(file_name)
