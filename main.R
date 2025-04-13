@@ -46,6 +46,8 @@ ft$patents$load_patents() |>
   ft$patents$trim_abstracts() |>
   ft$patents$save_patents()
 
+ft$patents$filter_citations()
+
 # 2. controls
 agg_patents = ft$controls$make_originating(base_year = BASE_YEAR)
 treated_pairs = ft$controls$make_treated(
