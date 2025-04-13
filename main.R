@@ -7,7 +7,7 @@ BASE_YEAR = 2005
 DURATION = 3
 
 # NOTE: how many days apart should an acceptable control be within
-SEARCH_RANGE = 30
+SEARCH_RANGE = 180
 
 # Imports ----
 library(fs)

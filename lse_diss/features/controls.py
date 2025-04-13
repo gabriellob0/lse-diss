@@ -116,12 +116,12 @@ def make_controls(
     # filters just to be safe
     result = (
         joined.filter(
-            #pl.col("control_application_date").is_between(
-            #    pl.col("min_date"), pl.col("max_date")
-            #),
-            #pl.col("citing_patent_id") != pl.col("control_patent_id"),
-            #pl.col("cited_patent_id") != pl.col("control_patent_id"),
-            #pl.col("cited_assignee_id") != pl.col("control_assignee_id"),
+            pl.col("control_application_date").is_between(
+                pl.col("min_date"), pl.col("max_date")
+            ),
+            pl.col("citing_patent_id") != pl.col("control_patent_id"),
+            pl.col("cited_patent_id") != pl.col("control_patent_id"),
+            pl.col("cited_assignee_id") != pl.col("control_assignee_id"),
             pl.col("cited_inventor_id")
             .list.set_intersection(pl.col("control_inventor_id"))
             .list.len()
@@ -152,7 +152,7 @@ def save_controls(
     duration=3,
     search_range=30,
     path=Path("data", "interim", "controls"),
-    batch_size=50,
+    batch_size=100,
 ):
     path.mkdir(parents=True, exist_ok=True)
 
