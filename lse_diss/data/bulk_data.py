@@ -40,7 +40,7 @@ def convert_files():
 
 
 if __name__ == "__main__":
-    urls = pl.read_json("references", "bulk_urls.json").to_dict()
+    urls = pl.read_json(Path("references", "bulk_urls.json")).to_dict()
 
     # Extract URLs from the polars Series and download each file
     for name, url_series in urls.items():
