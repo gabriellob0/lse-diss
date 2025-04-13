@@ -48,6 +48,7 @@ def make_treated(
         .rename({"patent_id": "cited_patent_id"})
         .join(citations, on="cited_patent_id", validate="1:m")
         .join(patents, left_on="citing_patent_id", right_on="patent_id")
+        # NOTE: removes self-cites
         .filter(
             pl.col("assignee_id") != pl.col("assignee_id_right"),
             pl.col("inventor_id")
@@ -115,6 +116,11 @@ def make_controls(
     # Apply inventor intersection filter after join
     # (This operation is too complex for join_where predicates)
     result = joined.filter(
+        pl.col("control_application_date") >= pl.col("min_date"),
+        pl.col("control_application_date") <= pl.col("max_date"),
+        pl.col("citing_patent_id") != pl.col("control_patent_id"),
+        pl.col("cited_patent_id") != pl.col("control_patent_id"),
+        pl.col("cited_assignee_id") != pl.col("control_assignee_id"),
         pl.col("cited_inventor_id")
         .list.set_intersection(pl.col("control_inventor_id"))
         .list.len()
