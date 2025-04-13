@@ -94,4 +94,3 @@ if (dir_exists(path("data", "processed", "embeddings"))) {
 
 ft$locations$make_locations()
 ft$location$make_distances()
-
