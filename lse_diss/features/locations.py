@@ -62,12 +62,6 @@ def make_distances(
             pl.col(["citing_patent_id", "control_patent_id"]),
             index=pl.col("cited_patent_id"),
         )
-        .with_columns(
-            pl.when(pl.col("variable") == "citing_patent_id")
-            .then(1)
-            .otherwise(0)
-            .alias("treatment_dummy")
-        )
         .join(
             locations, left_on="cited_patent_id", right_on="patent_id", validate="m:1"
         )
@@ -90,8 +84,7 @@ def make_distances(
                 "parent_location"
             ),
             pl.col("child_patent_id"),
-            pl.concat_list("child_latitude", "child_longitude").alias("child_location"),
-            pl.col("treatment_dummy"),
+            pl.concat_list("child_latitude", "child_longitude").alias("child_location")
         )
         .collect()
     )
@@ -104,8 +97,11 @@ def make_distances(
         dist = distance.distance(parent, child).km
         distances.append(dist)
 
-    patents_with_distances = matched_patents.with_columns(
-        distance=pl.Series(distances)
-    ).select(["parent_patent_id", "child_patent_id", "treatment_dummy", "distance"])
+    patents_with_distances = (
+        matched_patents
+        .with_columns(distance=pl.Series(distances))
+        .select(["parent_patent_id", "child_patent_id", "distance"])
+        .unique()
+    )
 
     patents_with_distances.write_parquet(save_path)

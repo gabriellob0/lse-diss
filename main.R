@@ -34,7 +34,7 @@ if (dir_exists(path("data", "raw", "bulk_downloads"))) {
 } else {
   print("downloading bulk data")
   py_run_file(
-    path("lse_diss", "data", "bulk_download.py"),
+    path("lse_diss", "data", "bulk_data.py"),
     convert = FALSE
   )
 }
