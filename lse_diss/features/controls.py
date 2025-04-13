@@ -103,7 +103,6 @@ def make_controls(
         on="cited_patent_id",
     )
 
-    # Use join_where instead of cross join
     joined = cited.join_where(
         potential_controls,
         pl.col("control_application_date").is_between(
@@ -112,25 +111,25 @@ def make_controls(
         pl.col("citing_patent_id") != pl.col("control_patent_id"),
         pl.col("cited_patent_id") != pl.col("control_patent_id"),
         pl.col("cited_assignee_id") != pl.col("control_assignee_id"),
-        pl.col("cited_inventor_id")
-        .list.set_intersection(pl.col("control_inventor_id"))
-        .list.len()
-        .eq(0),
     )
 
     # filters just to be safe
-    result = joined.filter(
-        pl.col("control_application_date").is_between(
-            pl.col("min_date"), pl.col("max_date")
-        ),
-        pl.col("citing_patent_id") != pl.col("control_patent_id"),
-        pl.col("cited_patent_id") != pl.col("control_patent_id"),
-        pl.col("cited_assignee_id") != pl.col("control_assignee_id"),
-        pl.col("cited_inventor_id")
-        .list.set_intersection(pl.col("control_inventor_id"))
-        .list.len()
-        .eq(0),
-    ).select(["citing_patent_id", "cited_patent_id", "control_patent_id"])
+    result = (
+        joined.filter(
+            pl.col("control_application_date").is_between(
+                pl.col("min_date"), pl.col("max_date")
+            ),
+            pl.col("citing_patent_id") != pl.col("control_patent_id"),
+            pl.col("cited_patent_id") != pl.col("control_patent_id"),
+            pl.col("cited_assignee_id") != pl.col("control_assignee_id"),
+            pl.col("cited_inventor_id")
+            .list.set_intersection(pl.col("control_inventor_id"))
+            .list.len()
+            .eq(0),
+        )
+        .select(["citing_patent_id", "cited_patent_id", "control_patent_id"])
+        .unique()
+    )
 
     return result
 
