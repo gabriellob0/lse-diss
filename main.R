@@ -4,7 +4,7 @@ BASE_YEAR = 2005
 
 # NOTE: citing and control patents are select from the duration in year
 # starting from the base year
-DURATION = 3
+DURATION = 5
 
 # NOTE: how many days apart should an acceptable control be within
 SEARCH_RANGE = 180
