@@ -25,3 +25,7 @@ def filter_abstracts(
     )
 
     abstracts.sink_parquet(save_path)
+
+
+if __name__ == "__main__":
+    filter_abstracts()

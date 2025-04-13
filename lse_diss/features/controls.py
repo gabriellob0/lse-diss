@@ -152,7 +152,7 @@ def save_controls(
     duration=3,
     search_range=30,
     path=Path("data", "interim", "controls"),
-    batch_size=100,
+    batch_size=500,
 ):
     path.mkdir(parents=True, exist_ok=True)
 
