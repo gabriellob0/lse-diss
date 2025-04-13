@@ -102,25 +102,26 @@ def make_controls(
         on="cited_patent_id",
     )
 
-    # TODO: consider non-equi join, but the engine might do it for me
-    cross_join = (
-        cited.join(potential_controls, how="cross")
-        .filter(
-            pl.col("citing_patent_id") != pl.col("control_patent_id"),
-            pl.col("cited_patent_id") != pl.col("control_patent_id"),
-            pl.col("cited_assignee_id") != pl.col("control_assignee_id"),
-            pl.col("control_application_date").is_between(
-                pl.col("min_date"), pl.col("max_date")
-            ),
-            pl.col("cited_inventor_id")
-            .list.set_intersection("control_inventor_id")
-            .list.len()
-            .eq(0),
-        )
-        .select(["citing_patent_id", "cited_patent_id", "control_patent_id"])
+    # Use join_where instead of cross join
+    joined = cited.join_where(
+        potential_controls,
+        pl.col("control_application_date") >= pl.col("min_date"),
+        pl.col("control_application_date") <= pl.col("max_date"),
+        pl.col("citing_patent_id") != pl.col("control_patent_id"),
+        pl.col("cited_patent_id") != pl.col("control_patent_id"),
+        pl.col("cited_assignee_id") != pl.col("control_assignee_id")
     )
+    
+    # Apply inventor intersection filter after join
+    # (This operation is too complex for join_where predicates)
+    result = joined.filter(
+        pl.col("cited_inventor_id")
+        .list.set_intersection(pl.col("control_inventor_id"))
+        .list.len()
+        .eq(0)
+    ).select(["citing_patent_id", "cited_patent_id", "control_patent_id"])
 
-    return cross_join
+    return result
 
 
 def remove_cited(df, citations_path=Path("data", "interim", "citations.parquet")):

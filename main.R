@@ -60,12 +60,11 @@ ft$controls$save_controls(
   agg_patents,
   treated_pairs,
   duration = DURATION,
-  search_range = SEARCH_RANGE,
-  batch_size = 50
+  search_range = SEARCH_RANGE
 )
 
 # 3. abstracts
-ft$controls$filter_abstracts()
+ft$abstracts$filter_abstracts()
 
 # Modelling ----
 
