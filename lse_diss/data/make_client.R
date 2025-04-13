@@ -1,5 +1,6 @@
 # PatentSearch API Client ----
 
+library(fs)
 library(httr2)
 library(purrr)
 library(rlang)
@@ -7,7 +8,7 @@ library(yaml)
 
 make_client <- function(
   api_key = Sys.getenv("PATENTSVIEW_API_KEY"),
-  config_path = "lse_diss/config.yaml"
+  config_path = path("lse_diss", "config.yaml")
 ) {
   if (identical(api_key, "")) {
     stop(
@@ -15,7 +16,7 @@ make_client <- function(
     )
   }
 
-  config <- read_yaml(config_path)
+  config <- read_yaml(config_path) |> pluck("api")
 
   endpoints <- pluck(config, "endpoints")
 

@@ -1,12 +1,74 @@
-# Imports ----
-#library(reticulate)
-#use_virtualenv(here::here(".venv"))
+# Configuration ----
+# NOTE: originating patent are selected from first month of base year
+BASE_YEAR = 2005
 
-#features <- import("lse_diss.features")
+# NOTE: citing and control patents are select from the duration in year
+# starting from the base year
+DURATION = 3
+
+# NOTE: how many days apart should an acceptable control be within
+SEARCH_RANGE = 60
+
+# Imports ----
+library(fs)
+library(reticulate)
+
+use_virtualenv(path_wd(".venv"))
 
 source("lse_diss/data/make_client.R")
 source("lse_diss/data/make_data.R")
 
+ft <- import("lse_diss.features")
+
 # Data ----
-client <- make_client()
-make_data(client)
+if (dir_exists(path("data", "raw", "patents"))) {
+  print("raw data path exists, not fetching api data")
+} else {
+  print("fetching api data")
+  client <- make_client()
+  make_data(client)
+}
+
+if (dir_exists(path("data", "raw", "bulk_downloads"))) {
+  print("raw data path exists, not downloading bulk data")
+} else {
+  print("downloading bulk data")
+  py_run_file(
+    path("lse_diss", "data", "bulk_download.py"),
+    convert = FALSE
+  )
+}
+
+# Features ----
+
+# 1. patents
+ft$patents$load_patents() |>
+  ft$patents$trim_abstracts() |>
+  ft$patents$save_patents()
+
+# 2. controls
+agg_patents = ft$controls$make_originating(base_year = BASE_YEAR)
+treated_pairs = ft$controls$make_treated(
+  agg_patents,
+  base_year = BASE_YEAR,
+  duration = DURATION
+)
+
+ft$controls$save_controls(
+  agg_patents,
+  treated_pairs,
+  duration = DURATION,
+  search_range = SEARCH_RANGE,
+  batch_size = 50
+)
+
+# 3. abstracts
+ft$controls$filter_abstracts()
+
+# Modelling ----
+
+# 1. embeddings
+# 2. knn
+# 3. locations
+
+ft$locations$make_locations()

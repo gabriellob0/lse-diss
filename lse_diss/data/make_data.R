@@ -1,5 +1,5 @@
-library(lubridate)
 library(fs)
+library(lubridate)
 library(arrow)
 library(dplyr)
 library(tidyr)

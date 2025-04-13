@@ -1,66 +1,73 @@
-endpoints:
-  patents: patent
-  us_patent_citations: patent/us_patent_citation/
-  inventors: inventor
-  locations: location
-parameters:
-  patents:
-    q:
-      _and:
-        - _gte:
-            patent_date: null
-        - _lte:
-            patent_date: null
-        - _eq:
-            assignees.assignee_type: '2'
-        - _eq:
-            assignees.assignee_country: US
-        - _eq:
-            patent_type: utility
-        - _eq:
-            inventors.inventor_country: US
-    f:
-      - patent_id
-      - patent_date
-      - patent_earliest_application_date
-      - patent_abstract
-      - patent_num_times_cited_by_us_patents
-      - patent_type
-      - inventors
-      - assignees
-    s:
-      - patent_id: asc
-    o:
-      size: null
-  us_patent_citations:
-    q:
-      citation_patent_id: null
-    f:
-      - patent_id
-      - citation_patent_id
-      - citation_category
-    s:
-      - citation_patent_id: asc
-    o:
-      size: null
-  inventors:
-    q:
-      inventor_id: null
-    f:
-      - inventor_id
-      - inventor_lastknown_location
-    s:
-      - inventor_id: asc
-    o:
-      size: null
-  locations:
-    q:
-      location_id: null
-    f:
-      - location_id
-      - location_latitude
-      - location_longitude
-    s:
-      - location_id: asc
-    o:
-      size: null
+api:
+  endpoints:
+    patents: patent
+    us_patent_citations: patent/us_patent_citation/
+    inventors: inventor
+    locations: location
+  parameters:
+    patents:
+      q:
+        _and:
+          - _gte:
+              patent_date: null
+          - _lte:
+              patent_date: null
+          - _eq:
+              assignees.assignee_type: '2'
+          - _eq:
+              assignees.assignee_country: US
+          - _eq:
+              patent_type: utility
+          - _eq:
+              inventors.inventor_country: US
+      f:
+        - patent_id
+        - patent_date
+        - patent_earliest_application_date
+        - patent_abstract
+        - patent_num_times_cited_by_us_patents
+        - patent_type
+        - inventors
+        - assignees
+      s:
+        - patent_id: asc
+      o:
+        size: null
+    us_patent_citations:
+      q:
+        citation_patent_id: null
+      f:
+        - patent_id
+        - citation_patent_id
+        - citation_category
+      s:
+        - citation_patent_id: asc
+      o:
+        size: null
+    inventors:
+      q:
+        inventor_id: null
+      f:
+        - inventor_id
+        - inventor_lastknown_location
+      s:
+        - inventor_id: asc
+      o:
+        size: null
+    locations:
+      q:
+        location_id: null
+      f:
+        - location_id
+        - location_latitude
+        - location_longitude
+      s:
+        - location_id: asc
+      o:
+        size: null
+bulk_urls:
+  # still need to think what is really neede here, might by just loc and citations
+  #g_cpc_current: 'https://s3.amazonaws.com/data.patentsview.org/download/g_cpc_current.tsv.zip'
+  #g_cpc_title: 'https://s3.amazonaws.com/data.patentsview.org/download/g_cpc_title.tsv.zip'
+  g_location_disambiguated: 'https://s3.amazonaws.com/data.patentsview.org/download/g_location_disambiguated.tsv.zip'
+  g_us_patent_citation: 'https://s3.amazonaws.com/data.patentsview.org/download/g_us_patent_citation.tsv.zip'

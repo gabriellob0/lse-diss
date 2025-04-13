@@ -1,5 +1,5 @@
-import pathlib
 import shutil
+from pathlib import Path
 
 import httpx
 import polars as pl
@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 def download_file(url):
-    path = pathlib.Path("data/external/bulk_downloads")
+    path = Path("data", "external", "bulk_downloads")
     path.mkdir(parents=True, exist_ok=True)
 
     file_name = url.split("/")[-1]
@@ -27,8 +27,8 @@ def download_file(url):
 
 
 def convert_files():
-    tsv_path = pathlib.Path("data/external/bulk_downloads")
-    parquet_path = pathlib.Path("data/raw/bulk_downloads")
+    tsv_path = Path("data", "external", "bulk_downloads")
+    parquet_path = Path("data", "raw", "bulk_downloads")
     parquet_path.mkdir(parents=True, exist_ok=True)
 
     for file_path in tsv_path.iterdir():
@@ -39,14 +39,15 @@ def convert_files():
             ).sink_parquet(save_path)
 
 
-urls = pl.read_json("references/bulk_urls_alt.json").to_dict()
+if __name__ == "__main__":
+    urls = pl.read_json("references", "bulk_urls.json").to_dict()
 
-# Extract URLs from the polars Series and download each file
-for name, url_series in urls.items():
-    url = url_series[0]  # Extract the URL string from the Series
-    print(f"Downloading {name}...")
-    download_file(url)
-    print(f"Downloaded and extracted {name}")
+    # Extract URLs from the polars Series and download each file
+    for name, url_series in urls.items():
+        url = url_series[0]  # Extract the URL string from the Series
+        print(f"Downloading {name}...")
+        download_file(url)
+        print(f"Downloaded and extracted {name}")
 
-# Conversion to parquet
-convert_files()
+    # Conversion to parquet
+    convert_files()
