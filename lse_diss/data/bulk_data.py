@@ -6,15 +6,14 @@ import polars as pl
 from tqdm import tqdm
 
 
-def download_file(url):
-    path = Path("data", "misc", "bulk_downloads")
+def download_file(url, path=Path("data", "misc", "bulk_downloads")):
     path.mkdir(parents=True, exist_ok=True)
 
     file_name = url.split("/")[-1]
     file_path = path / file_name
 
     with open(file_path, "wb") as f:
-        with httpx.stream("GET", url) as r:
+        with httpx.stream("GET", url, follow_redirects=True) as r:
             r.raise_for_status()
             size = int(r.headers.get("content-length", 0))
             with tqdm(total=size, unit="iB", unit_scale=True) as pbar:
