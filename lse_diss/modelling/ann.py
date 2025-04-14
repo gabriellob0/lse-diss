@@ -15,7 +15,9 @@ def create_index(
     embeddings = df.get_column("embedding").to_numpy()
 
     dimension = embeddings.shape[1]
-    index = Index(Space.Cosine, num_dimensions=dimension, storage_data_type=StorageDataType.E4M3)
+    index = Index(
+        Space.Cosine, num_dimensions=dimension, storage_data_type=StorageDataType.E4M3
+    )
     index.add_items(embeddings)
 
     index.save(str(file_path))
@@ -68,16 +70,12 @@ def match_controls(
     )
 
     controls = (
-        raw_controls
-        .join(
+        raw_controls.join(
             patents_with_embeddings.select(["patent_id", "voyager_index"]),
             left_on="control_patent_id",
             right_on="patent_id",
         )
-        .join(
-            patents_with_neighbours,
-            on=["citing_patent_id", "voyager_index"]
-        )
+        .join(patents_with_neighbours, on=["citing_patent_id", "voyager_index"])
         .select(["citing_patent_id", "cited_patent_id", "control_patent_id"])
         .unique()
     )

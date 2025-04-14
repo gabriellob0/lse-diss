@@ -81,16 +81,18 @@ if (dir_exists(path("data", "processed", "embeddings"))) {
   )
 }
 
-if (dir_exists(path("data", "processed", "embeddings"))) {
+if (!dir_exists(path("data", "processed", "embeddings"))) {
+  print("no embeddings")
+  stop()
+} else if (file_exists(path("data", "processed", "controls.parquet"))) {
+  print("NNs exist")
+} else {
   print("matching abstracts")
   py_run_file(
     path("lse_diss", "modelling", "ann.py"),
     convert = FALSE
   )
-} else {
-  print("no embeddings")
-  stop()
 }
 
 ft$locations$make_locations()
-ft$location$make_distances()
+ft$locations$make_distances()
