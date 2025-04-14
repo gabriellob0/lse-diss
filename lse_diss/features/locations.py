@@ -84,7 +84,7 @@ def make_distances(
                 "parent_location"
             ),
             pl.col("child_patent_id"),
-            pl.concat_list("child_latitude", "child_longitude").alias("child_location")
+            pl.concat_list("child_latitude", "child_longitude").alias("child_location"),
         )
         .collect()
     )
@@ -98,8 +98,7 @@ def make_distances(
         distances.append(dist)
 
     patents_with_distances = (
-        matched_patents
-        .with_columns(distance=pl.Series(distances))
+        matched_patents.with_columns(distance=pl.Series(distances))
         .select(["parent_patent_id", "child_patent_id", "distance"])
         .unique()
     )

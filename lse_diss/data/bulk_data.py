@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 def download_file(url):
-    path = Path("data", "external", "bulk_downloads")
+    path = Path("data", "misc", "bulk_downloads")
     path.mkdir(parents=True, exist_ok=True)
 
     file_name = url.split("/")[-1]
@@ -27,7 +27,7 @@ def download_file(url):
 
 
 def convert_files():
-    tsv_path = Path("data", "external", "bulk_downloads")
+    tsv_path = Path("data", "misc", "bulk_downloads")
     parquet_path = Path("data", "raw", "bulk_downloads")
     parquet_path.mkdir(parents=True, exist_ok=True)
 

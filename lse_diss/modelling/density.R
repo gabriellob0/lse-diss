@@ -4,9 +4,38 @@ library(dplyr)
 library(purrr)
 library(tibble)
 
+
+calculate_density <- function(distances, range) {
+  reflected_distances <- c(distances, -distances)
+
+  # NOTE: most papers use the default bandwidth here, Silverman's
+  # TODO: but it might not be recommended
+
+  # NOTE: default is the Gaussian, which is also used by OD
+  reflected_densities <- reflected_distances |>
+    density(
+      bw = "SJ",
+      from = -range,
+      to = range,
+      n = 512
+    ) |>
+    keep_at(c("x", "y")) |>
+    bind_rows() |>
+    rename(distance = x, density = y)
+
+  # NOTE: this is Silverman's reflection method
+  reflected_densities |>
+    mutate(density = if_else(distance >= 0, 2 * density, 0)) |>
+    filter(distance >= 0)
+}
+
+# data ----
 controls <- read_parquet(path("data", "processed", "controls.parquet"))
 distances <- read_parquet(path("data", "processed", "distances.parquet"))
 
+RANGE <- max(distances$distance * 1.5)
+
+# treatment ----
 treated_group <- controls |>
   select(cited_patent_id, citing_patent_id) |>
   distinct() |>
@@ -18,14 +47,15 @@ treated_group <- controls |>
     )
   )
 
-actual_density <- treated_group |>
+treated_density <- treated_group |>
   pull(distance) |>
-  density(from = 0, to = 11000) |>
-  keep_at(c("x", "y")) |>
-  bind_rows() |>
-  rename(distance = x, density = y)
+  calculate_density(distances = _, RANGE)
 
-N <- 1000
+plot(treated_density$density)
+
+
+#simulations ----
+N <- 10
 
 control_group <- 1:N |>
   map(
@@ -48,31 +78,16 @@ control_group <- 1:N |>
 
 densities <- control_group |>
   deframe() |>
-  # TODO: figure out the density defaults
-  map(\(x) density(x, from = 0, to = 11000)) |>
-  list_transpose() |>
-  keep_at(c("x", "y")) |>
-  list_transpose() |>
-  enframe() |>
-  unnest_wider("value") |>
-  unnest_longer(c("x", "y")) |>
-  rename(iteration = name, distance = x, density = y)
+  map(\(x) calculate_density(x, RANGE)) |>
+  bind_rows(.id = "iteration")
 
-quantiles <- densities |>
+
+# confidence intervals
+local_cis <- densities |>
   group_by(distance) |>
   summarise(
-    lower_local = quantile(density, 0.025),
-    upper_local = quantile(density, 0.975)
+    lower_local = quantile(density, 0.05),
+    upper_local = quantile(density, 0.95)
   )
 
-deviations <- densities |>
-  mutate(mean = mean(density), .by = distance) |>
-  group_by(iteration) |>
-  summarize(
-    max_pos_dev = max(density - mean), # Maximum positive deviation
-    max_neg_dev = max(mean - density) # Maximum negative deviation
-  ) |>
-  summarise(
-    global_upper_dev = quantile(max_pos_dev, 0.95),
-    global_lower_dev = quantile(max_neg_dev, 0.95)
-  )
+global_cis
