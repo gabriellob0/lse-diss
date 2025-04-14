@@ -42,7 +42,7 @@ if (dir_exists(path("data", "raw", "bulk_downloads"))) {
 # Features ----
 
 if (file_exists(path("data", "interim", "abstracts.parquet"))) {
-  print("abstracts exists, not running features")
+  print("abstracts exist, not running features")
 } else {
   # 1. patents
   ft$patents$load_patents() |>
@@ -73,7 +73,7 @@ if (file_exists(path("data", "interim", "abstracts.parquet"))) {
 # Modelling ----
 
 if (dir_exists(path("data", "processed", "embeddings"))) {
-  print("embeddings exists, not encoding abstracts")
+  print("embeddings exist, not encoding abstracts")
 } else {
   py_run_file(
     path("lse_diss", "modelling", "embeddings.py"),
@@ -82,7 +82,7 @@ if (dir_exists(path("data", "processed", "embeddings"))) {
 }
 
 if (!dir_exists(path("data", "processed", "embeddings"))) {
-  print("no embeddings")
+  print("no embeddings, please encode abstracts")
   stop()
 } else if (file_exists(path("data", "processed", "controls.parquet"))) {
   print("NNs exist")
@@ -94,5 +94,10 @@ if (!dir_exists(path("data", "processed", "embeddings"))) {
   )
 }
 
-ft$locations$make_locations()
-ft$locations$make_distances()
+if (file_exists(path("data", "processed", "distances"))) {
+  print("distances exist")
+} else {
+  print("calculating distances")
+  ft$locations$make_locations()
+  ft$locations$make_distances()
+}
