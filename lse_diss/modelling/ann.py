@@ -2,7 +2,7 @@ from math import ceil
 from pathlib import Path
 
 import polars as pl
-from voyager import Index, Space
+from voyager import Index, Space, StorageDataType
 
 
 def create_index(
@@ -15,7 +15,7 @@ def create_index(
     embeddings = df.get_column("embedding").to_numpy()
 
     dimension = embeddings.shape[1]
-    index = Index(Space.Cosine, num_dimensions=dimension)
+    index = Index(Space.Cosine, num_dimensions=dimension, storage_data_type=StorageDataType.E4M3)
     index.add_items(embeddings)
 
     index.save(str(file_path))
@@ -41,8 +41,8 @@ def match_controls(
 
     n_neighbours = (
         patents_with_embeddings.unique("patent_id")
-        # NOTE: this is where the top 1% is defined
-        .select(pl.len() / 100)
+        # NOTE: this is where the top 0.1% is defined
+        .select(pl.len() / 1000)
         .collect()
         .item(0, 0)
     )
@@ -88,7 +88,14 @@ def match_controls(
 
 
 if __name__ == "__main__":
-    create_index()
+    if Path("data", "interim", "index.voy").exists():
+        print("index exists")
+    else:
+        print("creating index")
+        create_index()
 
+    print("loading index")
     index = open_index()
+
+    print("finding neighbours")
     match_controls(index)
