@@ -1,5 +1,6 @@
 from math import ceil
 from pathlib import Path
+import re
 
 import polars as pl
 from sentence_transformers import SentenceTransformer
@@ -11,6 +12,15 @@ def make_embeddings(
     batch_size=40000,
 ):
     save_path.mkdir(exist_ok=True, parents=True)
+
+    j = -1
+    file_pattern = re.compile(r"embedded_abstracts_(\d+)\.parquet")
+    for file_path in save_path.glob("embedded_abstracts_*.parquet"):
+        match = file_pattern.match(file_path.name)
+        if match:
+            j = max(j, int(match.group(1)))
+
+    j = j + 1
 
     model = SentenceTransformer(
         "nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True, truncate_dim=256
@@ -25,7 +35,7 @@ def make_embeddings(
         start = i * batch_size
         length = min(batch_size, total_rows - start)
 
-        file_path = save_path / f"embedded_abstracts_{i}.parquet"
+        file_path = save_path / f"embedded_abstracts_{i + j}.parquet"
 
         sliced_patents = patents.slice(start, length).collect()
         abstracts = sliced_patents.get_column("patent_abstract").to_list()

@@ -16,7 +16,7 @@ def encode_all():
 
     if embeddings_path.exists():
         print("rewriting abstracts")
-        [file_path.unlink() for file_path in abstracts_path.glob('*')]
+        [file_path.unlink() for file_path in abstracts_path.glob("*")]
 
         embeddings = pl.scan_parquet(embeddings_path).select("patent_id")
         patents.join(embeddings, on="patent_id", how="anti").sink_parquet(
