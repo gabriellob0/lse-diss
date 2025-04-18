@@ -32,7 +32,7 @@ ft$controls$save_controls(
   duration = 20,
   search_range = 180,
   path=Path("data", "interim", "controls_alt"),
-  batch_size=500,
+  batch_size=500
 )
 
 ft$abstracts$filter_embeddings()
