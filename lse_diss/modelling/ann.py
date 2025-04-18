@@ -71,8 +71,7 @@ def match_controls(
     )
 
     controls = (
-        raw_controls.slice(0, 100)
-        .join(
+        raw_controls.join(
             patents_with_embeddings.select(["patent_id", "voyager_index"]),
             left_on="control_patent_id",
             right_on="patent_id",
@@ -84,9 +83,7 @@ def match_controls(
 
     print("sinking data")
 
-    n_controls = controls.select(pl.len()).collect().item(0, 0)
-    print(n_controls)
-    #controls.sink_parquet(save_path)
+    controls.sink_parquet(save_path)
 
 
 if __name__ == "__main__":
