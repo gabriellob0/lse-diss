@@ -21,12 +21,15 @@ from lse_diss.modelling.ann import create_index, open_index, match_controls
 
 #filter_embeddings()
 
-create_index(save_path=Path("data", "misc"))
+#create_index(save_path=Path("data", "misc"))
 
 index = open_index(Path("data", "misc", "index.voy"))
+
+# 155 NNs
 match_controls(
     index,
     embeddings_path=Path("data", "processed", "embeddings_alt"),
-    controls_path=Path("data", "processed", "controls_alt"),
-    save_path=Path("data", "processed", "control_alt.parquet")
+    controls_path=Path("data", "interim", "controls_alt"),
+    save_path=Path("data", "processed", "controls_alt.parquet"),
+    match_quality=1000
 )
