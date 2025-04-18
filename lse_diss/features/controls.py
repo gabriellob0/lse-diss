@@ -5,9 +5,14 @@ import polars as pl
 from tqdm import tqdm
 
 
-def make_originating(patents_path=Path("data", "interim", "patents"), base_year=2005):
+def make_originating(
+    patents_path=Path("data", "interim", "patents"),
+    base_year=2005,
+    duration_months=1,
+    duration_years=0,
+):
     start_date = pl.date(base_year, 1, 1)
-    end_date = pl.date(base_year, 2, 1)
+    end_date = pl.date(base_year + duration_years, 1 + duration_months, 1)
 
     patents = (
         pl.scan_parquet(patents_path)

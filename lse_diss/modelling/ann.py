@@ -35,6 +35,7 @@ def match_controls(
     embeddings_path=Path("data", "processed", "embeddings"),
     controls_path=Path("data", "interim", "controls"),
     save_path=Path("data", "processed", "controls.parquet"),
+    match_quality=1000,
 ):
     patents_with_embeddings = pl.scan_parquet(embeddings_path).with_row_index(
         "voyager_index"
@@ -44,7 +45,7 @@ def match_controls(
     n_neighbours = (
         patents_with_embeddings.unique("patent_id")
         # NOTE: this is where the top 0.1% is defined
-        .select(pl.len() / 1000)
+        .select(pl.len() / match_quality)
         .collect()
         .item(0, 0)
     )
