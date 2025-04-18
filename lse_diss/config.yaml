@@ -66,8 +66,7 @@ api:
       o:
         size: null
 bulk_urls:
-  # still need to think what is really neede here, might by just loc and citations
-  #g_cpc_current: 'https://s3.amazonaws.com/data.patentsview.org/download/g_cpc_current.tsv.zip'
-  #g_cpc_title: 'https://s3.amazonaws.com/data.patentsview.org/download/g_cpc_title.tsv.zip'
+  g_cpc_current: 'https://s3.amazonaws.com/data.patentsview.org/download/g_cpc_current.tsv.zip'
+  g_cpc_title: 'https://s3.amazonaws.com/data.patentsview.org/download/g_cpc_title.tsv.zip'
   g_location_disambiguated: 'https://s3.amazonaws.com/data.patentsview.org/download/g_location_disambiguated.tsv.zip'
   g_us_patent_citation: 'https://s3.amazonaws.com/data.patentsview.org/download/g_us_patent_citation.tsv.zip'

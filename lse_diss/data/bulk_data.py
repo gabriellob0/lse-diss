@@ -1,8 +1,10 @@
+import gzip
 import shutil
 from pathlib import Path
 
 import httpx
 import polars as pl
+import yaml
 from tqdm import tqdm
 
 
@@ -21,8 +23,27 @@ def download_file(url, path=Path("data", "misc", "bulk_downloads")):
                     pbar.update(len(data))
                     f.write(data)
 
-    shutil.unpack_archive(file_path, path)
-    file_path.unlink()
+        # Try to unpack with shutil.unpack_archive
+    try:
+        shutil.unpack_archive(file_path, path)
+        file_path.unlink()
+        return
+
+    except Exception:
+        # If that fails, check if it's a .gz file and try gzip unpacking
+        if file_path.suffix == ".gz":
+            try:
+                with gzip.open(file_path, "rb") as f_in:
+                    output_path = file_path.with_suffix("")
+                    with open(output_path, "wb") as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                file_path.unlink()
+                return
+            except Exception as e:
+                print(f"Failed to unpack gzipped file {file_name}: {e}")
+
+    # If we reach here, both unpacking methods failed
+    print(f"Keeping original file {file_name}")
 
 
 def convert_files():
@@ -39,11 +60,16 @@ def convert_files():
 
 
 if __name__ == "__main__":
-    urls = pl.read_json(Path("references", "bulk_urls.json")).to_dict()
+    with open(Path("lse_diss", "config.yaml")) as stream:
+        try:
+            config = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    urls = config["bulk_urls"]
 
     # Extract URLs from the polars Series and download each file
-    for name, url_series in urls.items():
-        url = url_series[0]  # Extract the URL string from the Series
+    for name, url in urls.items():
         print(f"Downloading {name}...")
         download_file(url)
         print(f"Downloaded and extracted {name}")
