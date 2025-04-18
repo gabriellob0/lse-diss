@@ -31,7 +31,7 @@ ft$controls$save_controls(
   treated,
   duration = 20,
   search_range = 180,
-  path=Path("data", "interim", "controls_alt"),
+  path=path("data", "interim", "controls_alt"),
   batch_size=500
 )
 
