@@ -71,7 +71,8 @@ def match_controls(
     )
 
     controls = (
-        raw_controls.join(
+        raw_controls.slice(0, 100)
+        .join(
             patents_with_embeddings.select(["patent_id", "voyager_index"]),
             left_on="control_patent_id",
             right_on="patent_id",
