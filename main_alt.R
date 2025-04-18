@@ -21,7 +21,7 @@ originating <- ft$controls$make_originating(
 )
 
 treated = ft$controls$make_treated(
-  originating_set,
+  originating,
   base_year = BASE_YEAR,
   duration = 20
 )
