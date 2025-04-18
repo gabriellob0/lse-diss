@@ -83,7 +83,9 @@ def match_controls(
 
     print("sinking data")
 
-    controls.sink_parquet(save_path)
+    n_controls = controls.select(pl.len()).collect().item(0, 0)
+    print(n_controls)
+    #controls.sink_parquet(save_path)
 
 
 if __name__ == "__main__":
