@@ -11,6 +11,7 @@ source("lse_diss/data/make_data.R")
 
 ft <- import("lse_diss.features")
 ann <- import("lse_diss.modelling.ann")
+pathlib <- import("pathlib")
 
 # Controls
 
@@ -31,7 +32,7 @@ ft$controls$save_controls(
   treated,
   duration = 20,
   search_range = 180,
-  path=path("data", "interim", "controls_alt"),
+  path=pathlib$Path("data", "interim", "controls_alt"),
   batch_size=500
 )
 
