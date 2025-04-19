@@ -101,3 +101,6 @@ if (file_exists(path("data", "processed", "distances"))) {
   ft$locations$make_locations()
   ft$locations$make_distances()
 }
+
+
+# Analysis ----
