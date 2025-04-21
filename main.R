@@ -12,11 +12,14 @@ SEARCH_RANGE = 180
 # Imports ----
 library(fs)
 library(reticulate)
+library(purrr)
+library(arrow)
 
 use_virtualenv(path_wd(".venv"))
 
 source("lse_diss/data/make_client.R")
 source("lse_diss/data/make_data.R")
+source("lse_diss/modelling/density.R")
 
 ft <- import("lse_diss.features")
 
@@ -94,12 +97,21 @@ if (!dir_exists(path("data", "processed", "embeddings"))) {
   )
 }
 
-if (file_exists(path("data", "processed", "distances"))) {
+if (file_exists(path("data", "processed", "distances.parquet"))) {
   print("distances exist")
 } else {
   print("calculating distances")
+  ft$classes$filter_classes()
   ft$locations$make_locations()
   ft$locations$make_distances()
 }
 
 # Analysis ----
+df <- load_data()
+
+results <- mutate(df, result = pmap(list(controls, distances), create_bands))
+
+results |>
+  select(cpc_section, result) |>
+  unnest(result) |>
+  write_parquet(path("data", "processed", "results.parquet"))

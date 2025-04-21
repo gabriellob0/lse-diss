@@ -2,26 +2,71 @@ library(fs)
 library(arrow)
 library(dplyr)
 library(purrr)
+library(tidyr)
 library(tibble)
 
 
-create_bands <- function(
-  controls_path = path("data", "processed", "controls.parquet"),
-  distances_path = path("data", "processed", "distances.parquet")
+load_data <- function(processed_path = path("data", "processed")
 ) {
-  controls <- read_parquet(controls_path)
+  processed_path <- path("data", "processed")
+  distances_path <- path(processed_path, "distances.parquet")
+  classes_path <- path(processed_path, "classes.parquet")
+  
   distances <- read_parquet(distances_path)
+  
+  classes <- classes_path |>
+    read_parquet() |>
+    filter(cited_dummy==1) |>
+    select(-cited_dummy) |>
+    mutate(V="All") |> 
+    pivot_longer(c(cpc_section, V), values_to = "cpc_section") |>
+    select(-name)
+  
+  median_distance <- median(distances$distance)
+  
+  nested_distances <- distances |>
+    filter(distance<=median_distance) |>
+    left_join(classes, by=join_by(parent_patent_id==patent_id)) |> 
+    nest(.by=cpc_section, .key="distances")
+  
+  controls <- path(processed_path, "controls.parquet") |>
+    read_parquet() |>
+    left_join(
+      distances,
+      by=join_by(
+        cited_patent_id==parent_patent_id,
+        citing_patent_id==child_patent_id
+      )
+    ) |>
+    left_join(
+      distances,
+      by=join_by(
+        cited_patent_id==parent_patent_id,
+        control_patent_id==child_patent_id
+      )
+    )
+  
+  nested_controls <- controls|> 
+    rename(treatment=distance.x, control=distance.y) |>
+    filter(treatment <= median_distance, control <= median_distance) |>
+    left_join(classes, by=join_by(cited_patent_id==patent_id)) |> 
+    select(-treatment, -control) |> 
+    nest(.by=cpc_section, .key="controls")
+  
+  nested_df <- nested_distances |> 
+    left_join(nested_controls, by = join_by(cpc_section)) |>
+    filter(cpc_section!="D")
+}
 
-  RANGE <- max(distances$distance * 1.5)
+create_bands <- function(controls, distances) {
+
+  RANGE <- max(distances$distance * 1.1)
 
   # TODO: Following DO, we define the maximum distance as the median of all
   # distances of all possible counterfactual citations
 
   calculate_density <- function(distances, range) {
     reflected_distances <- c(distances, -distances)
-
-    # NOTE: most papers use the default bandwidth here, Silverman's
-    # TODO: but it might not be recommended
 
     # NOTE: default is the Gaussian, which is also used by OD
     reflected_densities <- reflected_distances |>

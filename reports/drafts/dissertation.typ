@@ -77,7 +77,7 @@ Inventors will choose the location with the highest potential benefit, i.e., $su
 
 These predictions help link short interaction distances to observed characteristics of agglomeration clusters. However, the key proppsition from the model is that, for a fixed $rho$, an increase in $abs(G'(d))$ weakly increases the number of inventors concentrated at short distances. Hence, the degree to which inventors are localised at different distances will indicate how fast benefits from knowledge spillovers decay. This observation serves as a justification for continuous density estimators. We compare the density of the treated group with that of the control, in which knowledge spillovers do not exist.
 
-This approach is the central idea of #cite(<RN28>, form: "prose")\'s estimator. The original approach estimates the density of bilateral distances between firms within an industry and compares it with that of all possible locations, i.e., $Zeta$. However, since these distances are not independent, they cannot create confidence intervals of the control density. Hence, they use simulations to generate these intervals. In #cite(<RN2>, form: "prose")\'s adaptation, we compare the distances between cited and citing patents with that of cited and control. We randomly draw controls for each cited-citing pair to estimate intervals.
+This approach is the central idea of #cite(<RN28>, form: "prose")\'s estimator. The original approach estimates the density of bilateral distances between firms within an industry and compares it with all possible locations, i.e., $Zeta$. However, since these distances are not independent, they cannot create confidence intervals of the control density. Hence, they use simulations to generate these intervals. In #cite(<RN2>, form: "prose")\'s adaptation, we compare the distances between cited and citing patents with that of cited and control. We randomly draw controls for each cited-citing pair to estimate intervals.
 
 #cite(<RN11>, form: "prose")\'s model also might help explain why some evidence of inventor-added citations being more localised than examiner-added exists, even though both are localised. Inventor-added could better reflect direct interactions between inventors, which operate under maximum interaction distance $rho$. However, examiner-added directly influences these citing patents through a sequence of individual connections. Since these connections, by definition, form an agglomeration cluster, either citation source indicates localisation.
 
@@ -151,6 +151,18 @@ First, I selected areas where the most inventors live for each patent. If this l
     Binned patent distribution
   ]
 ) <figure2>
+
+Using a Gaussian kernel, I estimated the density $hat(K)(d)$ for each draw, where $d$ is the distance. Using the Sheather and Jones (1991, CITE) method, I selected bandwidths. Hence, for each distance $d$ the, the density $hat(K)(d)$ is
+
+$ hat(K)(d) = 1 / (2 h N) sum_(i=1)^(n) sum_(j=1)^(n^i) f((d - d_(i, j)) / h), $
+
+where, for each subsample, $n$ is the number of cited patents, $n^i$ the number of citing patents for cited patent $i$, and $N$ the total number of citations for all $i in {1, ..., n}$. Additionally, $h$ is the bandwidth, $f()$ kernel, and $d_(i, j)$ the distances between patents $i$ and $j$.
+
+Since the density should be zero for negative distances, we use the reflection method employed by Duranton and Overman (2005, CITE). I estimated the density over an augmented set that included the original distances and minus the original distances, denoted $tilde(K)(d)$. Then, I set $hat(K)(d)=0, space.en forall d < 0$, and $hat(K)(d)=2tilde(K)(d), space.en forall d gt.eq 0$.
+
+I create the local confidence intervals by selecting the 95th and 5th quantiles over the densities from the 1,000 random control draws at each distance. These quantiles are the lower confidence interval $underline(K)(d)$ and the upper confidence interval $overline(K)(d)$. If $hat(K)(d) gt.eq overline(K)(d)$, we say this subsample shows localisation at distance $d$. Conversely, if $hat(K)(d) lt.eq underline(K)(d)$, we say this subsample shows dispersion at distance $d$.
+
+The local tests have two issues. First, dispersion and location at a distance generally imply the converse at a separate distance. Second, we are conducting multiple hypothesis tests by considering all distances. Hence, we construct global confidence intervals so that only 5% of simulated densities will cross these intervals, with the probability constant across all distances. We denote these bands $overline(overline(K))(d)$ and $underline(underline(K))(d)$. A subsample displays global localisation if $hat(K)(d) gt.eq overline(overline(K))(d)$ for at least one $d$.
 
 = Results <section4>
 

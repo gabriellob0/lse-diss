@@ -169,7 +169,7 @@ make_figure1 <- function(
     geom_point() +
     theme_void() +
     labs(colour = "CPC section") +
-    theme(text = element_text(family = "Libertinus Serif"))
+    theme(text = element_text(family = "Libertinus Serif", face="bold"))
 
   ggsave(save_path, plot)
 }
@@ -201,7 +201,7 @@ make_figure2 <- function(
     ) +
     theme_minimal() +
     theme(
-      text = element_text(family = "Libertinus Serif")
+      text = element_text(family = "Libertinus Serif", face="bold")
     ) +
     scale_fill_viridis() +
     labs(fill = "Log count", x = "Longitude", y = "Latitude")
