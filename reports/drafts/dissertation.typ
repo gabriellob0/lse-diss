@@ -1,11 +1,6 @@
-#align(center, text(18pt)[
-  *Title*
-])
-
 #set page(numbering: "1", margin: 1.5in)
 
 #set heading(numbering: "1.")
-//#show heading: set block(above: 1.8em, below: 1em)
 
 #set text(font: "libertinus serif", size: 12pt, top-edge: 0.8em, bottom-edge: -0.2em)
 #set par(leading: 1em, spacing: 1em, justify: true, first-line-indent: 2em)
@@ -35,21 +30,21 @@ However, findings could still reflect other agglomerative forces even if we excl
 
 They find localisation at the Standard Metropolitan Statistical Area (SMSA), state, and national levels. However, these results depended on how well the three-digit classes proxied endogenous factors. This issue led #cite(<RN3>, form: "prose") to use the six-digit classes for matching controls to reassess earlier results. They find no evidence of intranational localisation. They argued that three-digit controls hid significant intra-class heterogeneity, but #cite(<RN4>, form: "prose") commented that boundaries between six-digit classes were arbitrary. #cite(<RN7>, form: "prose") wrote another reply, but the issue remained unsettled.
 
-#cite(<RN2>, form: "prose") followed in the spirit of these earlier papers but proposed important methodological advances. Its primary contribution was to adapt the localisation test of #cite(<RN28>, form: "prose") for the context of patent citations. #cite(<RN1>, form: "prose") and #cite(<RN3>, form: "prose") used a discrete localisation measure. They compared the frequency at which cited and citing patents originated in the same discrete spatial unit (i.e., SMSA, state, and country) to that of cited and control. Not only did two patents in neighbouring units have the same impact as those across the country in the final results, also implied that the results were sensitive to the modifiable areal unit problem @RN27.
+#cite(<RN2>, form: "prose") followed in the spirit of these earlier papers but proposed important methodological advances. Its primary contribution was to adapt the localisation test of #cite(<RN28>, form: "prose") for the context of patent citations. #cite(<RN1>, form: "prose") and #cite(<RN3>, form: "prose") used a discrete localisation measure. They compared the frequency at which cited and citing patents originated in the same discrete spatial unit (i.e., SMSA, state, and country) to that of cited and control. Not only did two patents in neighbouring units have the same impact as those across the country in the final results, it also implied that the results were sensitive to the modifiable areal unit problem @RN27.
 
-In contrast, the #cite(<RN28>, form: "prose") test, which I describe in more detail in #link(<section3>)[Section 3], treats observations as points in continuous space. This approach addresses the aforementioned issues and incorporates a richer information set in estimated parameters. #cite(<RN2>, form: "prose") find evidence supporting localisation in 70% of all three-digit classes when using three-digit controls and in a third when using six-digit controls. Additionally, more than 10% of classes showed dispersion when using six-digit controls.
+In contrast, the #cite(<RN28>, form: "prose") test, which I describe in more detail in #link(<section3>)[Section 3], treats observations as points in continuous space. This approach addresses the aforementioned issues and incorporates a richer information set in estimated parameters. #cite(<RN2>, form: "prose") find evidence supporting localisation in 70% of all three-digit classes when using three-digit controls and in a third of all three-digit classes when using six-digit controls. Additionally, more than 10% of classes showed dispersion when using six-digit controls.
 
-The latter point implies that aggregate results might fail to show localisation as the opposing forces would cancel out, which explains the different results in the original papers. However, it does not address the quality of either control. To do so, #cite(<RN2>, form: "prose") conducted a sensitivity analysis which generalises the controls to include three and six-digit as limiting cases. Their simulations show that most classes will still show localisation unless the matching procedure introduces extremely high selection bias.
+The latter point implies that results from aggregate spatial units might fail to show localisation as the opposing forces would cancel out, which explains the different results in the original papers. However, it does not address the quality of either control. To do so, #cite(<RN2>, form: "prose") conducted a sensitivity analysis which generalises the controls to include three and six-digit as limiting cases. Their simulations show that most classes will still show localisation unless the matching procedure introduces extremely high selection bias.
 
 == Developments in patent text analysis
 
-Although results from #cite(<RN2>, form: "prose") show that the evidence for localisation is robust, developments in patent analysis tools have created an opportunity to re-examine the matching approach. Natural language processing (NLP) has progressed incredibly in the past few years, and patents contain rich textual data in their abstracts, claims, and invention descriptions. Economists have already begun incorporating textual data sources in research, but only in a limited capacity. For an introduction to text data in economics, see #cite(<RN17>, form: "prose").
+Although results from #cite(<RN2>, form: "prose") show that the evidence for localisation is robust, developments in patent analysis tools have created an opportunity to re-examine the matching approach. Natural language processing (NLP) has progressed incredibly in the past few years, and patents contain rich textual data in their abstracts, claims, and invention descriptions. Economists have already begun incorporating textual data sources in research, but only in a limited capacity. For a general review of these cases and an introduction to text data in economics, see #cite(<RN17>, form: "prose").
 
 #cite(<RN18>, form: "prose") use the Jaccard similarity coefficient, the size of the intersection of words divided by the size of the union of words in two documents, to identify similar patents using their titles and abstracts. They found that patents matched with this method were likelier to have the same assignees and inventors, technological classification, and cite one another. The results were also validated by a panel of experts, highlighting that the index had weak matching power for patents with little text. As an application, they conduct a discrete space version of the matching approach, finding evidence for localisation.
 
 However, #cite(<RN18>, form: "prose") and other uses of textual data within innovation economics @RN16 @RN29[for example] have focused on simple text-based statistics, far behind the current state-of-the-art. Since #cite(<RN31>, form: "prose") introduced the transformer architecture, deep learning has dominated much of the natural language domain. A leading use of the architecture has been for contextual embeddings, which are vector representations of the meaning of documents. These have since outperformed previous approaches in tasks like clustering, similarity, and information retrieval @RN20, and researchers can easily access pre-trained models through libraries like Sentence Transformers in Python.
 
-Once we encode a patent's text as an embedding, we can obtain a similarity measure between patents by calculating the vectors' angle (i.e., the cosine). More similar patents would have a smaller angle between their encodings, and we can explore the similarity space using nearest neighbours algorithms @RN22[Section 6.4]. #cite(<RN9>, form: "prose") evaluate the performance of embedding models for patent similarity and find that transformer-based models outperform static measures. They use patent interferences, the case of distinct inventors submitting nearly identical claims simultaneously, as the benchmark for these tests.
+Once we encode a patent's text as an embedding, we can obtain a similarity measure between patents by calculating the vectors' angle (i.e., the cosine). More similar patents would have a smaller angle between their encodings @RN22[Section 6.4], and we can explore the similarity space using nearest neighbours algorithms. #cite(<RN9>, form: "prose") evaluate the performance of embedding models for patent similarity and find that transformer-based models outperform static measures. They use patent interferences, the case of distinct inventors submitting nearly identical claims simultaneously, as the benchmark for these tests.
 
 I use a state-of-the-art contextual embedding model to match control to citing patents. However, due to time constraints, I have not fine-tuned the model. Despite this limitation, the model I use performs significantly better on benchmarks than the baseline contextual embedding model used by #cite(<RN9>, form: "prose"). #cite(<RN24>, form: "prose") is the only application of contextual embeddings in a matching localisation estimator that I could find. However, because it uses a discrete measure of space, it also suffers from spatial aggregation problems. They generally find weaker localisation evidence than #cite(<RN1>, form: "prose").
 
@@ -69,15 +64,15 @@ Continuous space estimators have also been more prevalent in economics since #ci
 
 = Conceptual framework <section2>
 
-#cite(<RN11>, form: "prose") provide one of the few microfoundations of agglomeration patterns from individual interactions. I adapt the language of this model for the context of individual inventors but keep the notation the same. Each inventor $i in N$ sequentially chooses their location $j(i)$ from possible locations $Zeta subset RR^2$. Locations are drawn from a uniform distribution, with more locations than inventors. The distance between inventors $i$ and $i'$ is $d_(j(i), j(i'))$. The benefit of interaction at cost $c$ for these inventors is $G(d_(j(i), j(i')))$. We assume $G(d)>0$ and $G'(d) < 0$.
+#cite(<RN11>, form: "prose") provide one of the few microfoundations of agglomeration patterns from individual interactions. I adapt the language of this model for the context of individual inventors but keep the notation the same. Each inventor $i in N$ sequentially chooses their location $j(i)$ from a possible location set $Zeta subset RR^2$. Locations are drawn from a uniform distribution, with more locations than inventors. The distance between inventors $i$ and $i'$ is $d_(j(i), j(i'))$. The benefit of interaction at cost $c$ for these inventors is $G(d_(j(i), j(i')))$. We assume $G(d)>0$ and $G'(d) < 0$.
 
-Inventors will choose the location with the highest potential benefit, i.e., $sum_(i'!=i) G(d_j, d_j(i'))$. Then, they might choose to interact with other inventors. Inventors interact if and only if $G(d_(j(i), j(i')))>=c$. Hence, there must be a maximum distance $rho eq.triple max{d: G(d)>=c}$ at which interactions happen. An agglomeration cluster is a set of locations interconnected by inventor interactions. For example, if inventor A interacts with inventor B, which interacts with inventor C, these form a cluster even if A does not interact with C. The latter is implied by the distance between A and B being larger than $rho$.
+Inventors will choose the location with the highest potential benefit, i.e., $sum_(i'!=i) G(d_j, d_j(i'))$. Then, they might choose to interact with other inventors. Inventors interact if and only if $G(d_(j(i), j(i')))>=c$. Hence, there must be a maximum distance $rho eq.triple max{d: G(d)>=c}$ at which interactions happen. An agglomeration cluster is a set of locations interconnected by inventor interactions. For example, if inventor A interacts with inventor B, which interacts with inventor C, these form a cluster even if A does not interact with C. The latter is implied by the distance between A and C being larger than $rho$.
 
-#cite(<RN11>, form: "prose") generate a series of predictions I describe informally from these assumptions. For a fixed number of inventors, they define higher inventor agglomeration as fewer agglomeration clusters. An increase in $rho$ will, therefore, weakly increase agglomeration. Inventors who could not previously interact will now be able to, possibly joining neighbouring clusters. These clusters will be larger, so for $N$, inventors cluster density decreases. Larger, less dense clusters imply that the average bilateral distance between inventors increases. 
+#cite(<RN11>, form: "prose") generate a series of predictions I describe informally from these assumptions. For a fixed number of inventors, they define higher inventor agglomeration as fewer agglomeration clusters. An increase in $rho$ will, therefore, weakly increase agglomeration. Inventors who could not previously interact will now be able to, possibly joining neighbouring clusters. These clusters will be larger, so for fixed $N$, inventors cluster density decreases. Larger, less dense clusters imply that the average bilateral distance between inventors increases. 
 
-These predictions help link short interaction distances to observed characteristics of agglomeration clusters. However, the key proppsition from the model is that, for a fixed $rho$, an increase in $abs(G'(d))$ weakly increases the number of inventors concentrated at short distances. Hence, the degree to which inventors are localised at different distances will indicate how fast benefits from knowledge spillovers decay. This observation serves as a justification for continuous density estimators. We compare the density of the treated group with that of the control, in which knowledge spillovers do not exist.
+These predictions help link short interaction distances to observed characteristics of agglomeration clusters. However, the key proposition from the model is that, for a fixed $rho$, an increase in $abs(G'(d))$ weakly increases the number of inventors concentrated at short distances. Hence, the degree to which inventors are localised at different distances will indicate how fast benefits from knowledge spillovers decay. This observation serves as a justification for continuous density estimators. We compare the density of the treated group with that of the control, in which knowledge spillovers do not exist.
 
-This approach is the central idea of #cite(<RN28>, form: "prose")\'s estimator. The original approach estimates the density of bilateral distances between firms within an industry and compares it with all possible locations, i.e., $Zeta$. However, since these distances are not independent, they cannot create confidence intervals of the control density. Hence, they use simulations to generate these intervals. In #cite(<RN2>, form: "prose")\'s adaptation, we compare the distances between cited and citing patents with that of cited and control. We randomly draw controls for each cited-citing pair to estimate intervals.
+This approach is the central idea of #cite(<RN28>, form: "prose")\'s estimator. The original approach estimates the density of bilateral distances between firms within an industry and compares it with all possible locations, i.e., $Zeta$. However, since these distances are not independent, they cannot create confidence intervals of the control density analytically. Hence, they use simulations to generate these intervals. In #cite(<RN2>, form: "prose")\'s adaptation, we compare the distances between cited and citing patents with that of cited and control. We randomly draw controls for each cited-citing pair to estimate intervals.
 
 #cite(<RN11>, form: "prose")\'s model also might help explain why some evidence of inventor-added citations being more localised than examiner-added exists, even though both are localised. Inventor-added could better reflect direct interactions between inventors, which operate under maximum interaction distance $rho$. However, examiner-added directly influences these citing patents through a sequence of individual connections. Since these connections, by definition, form an agglomeration cluster, either citation source indicates localisation.
 
@@ -85,11 +80,11 @@ This approach is the central idea of #cite(<RN28>, form: "prose")\'s estimator. 
 
 == Sample construction
 
-I used data from the USPTO's PatentsView platform, which helps disseminate intellectual property data. It contains quarterly updated datasets created from raw patent information. The datasets undergo an entity (e.g., inventors, assignees, and locations) disambiguation process. PatentsView also standardises locations with places from the OSMNames project #footnote[The OSMNames database contains place names from OpenStreetMap and geographic information. It is available at: #link("https://osmnames.org/").]. Finally, it contains data on five different patent classification systems, including the USPC and its successor, the Cooperative Patent Classification (CPC).
+I used data from the USPTO's PatentsView platform, which helps disseminate intellectual property data. It contains quarterly updated datasets created from raw patent information. The datasets undergo an entity (e.g., inventors, assignees, and locations) disambiguation process. PatentsView also standardises locations with places from the OSMNames project #footnote[The OSMNames database contains place names from OpenStreetMap and geographic information. It is available at #link("https://osmnames.org/").]. Finally, it contains data on five different patent classification systems, including the USPC and its successor, the Cooperative Patent Classification (CPC).
 
 The platform serves data through an API and bulk downloads files. I used the API to fetch all utility patents granted between 2005 and 2025 with at least one US-based inventor and one US-based corporate assignee. I then excluded all patents with multiple assignees, any missing information, or citations not added by inventors or examiners. Finally, I removed those patents with abstracts in the bottom and top 0.01 per cent of the character count. These conditions were satisfied by around 2 million unique patents and 11,500 unique inventors. I collected citations, locations, and CPC class information from the bulk download files.
 
-I chose utility patents and corporate assignees to match the sample construction choices of #cite(<RN1>, form: "prose") and #cite(<RN3>, form: "prose"). Previous papers generally included patents granted between the mid-70s and 1990 or 2000, so my sample covers a different period. This fact likely would imply weaker localisation effects if we consider the increased importance of the log-distance collaboration. For example, #cite(<RN39>, form: "prose") highlight the increase in cross-country inventor teams. I restricted the number of assignees for two primary reasons: it simplified my coding, and multiple assignees could reflect complex commercial arrangements with inventors.
+I chose utility patents and corporate assignees to match the sample construction choices of #cite(<RN1>, form: "prose") and #cite(<RN3>, form: "prose"). Previous papers generally included patents granted between the mid-70s and 1990 or 2000, so my sample covers a different period. This fact likely would imply weaker localisation effects if we consider the increased importance of long-distance collaboration. For example, #cite(<RN39>, form: "prose") highlight the increase in cross-country inventor teams. I restricted the number of assignees for two primary reasons: it simplified my coding, and multiple assignees could reflect complex commercial arrangements with inventors.
 
 Missing observations are likely missing randomly and amount to less than a thousand observations. I observed that summary tables describing missingness varied between requests for the same data, likely indicating API issues. The applicant, the examiner, and third parties can include citations. I only kept the first two since the third, which comprises a small group, might not reflect spillovers. Although we could use the same argument to favour removing examiner-added citations, previous research has not used this restriction. An interesting extension would have been to examine both samples, but given time restrictions, I opted for the larger one.
 
@@ -112,7 +107,7 @@ I also matched the final set of cited patents to their respective CPC sections. 
 
 #figure(image("table2.png"), kind: table) <table2>
 
-#link(<figure1>)[Figure 1] shows a random sample of embeddings represented in 2 dimensions using the t-SNE dimensionality reduction algorithm from the original 256 dimensions. Hence, proximity denotes semantic similarity. Colours denote the patent class, and we see evidence of clustering based on these colours. These patterns highlight how the text and the classes of the patents are connected, which is captured by the embeddings.
+#link(<figure1>)[Figure 1] shows a random sample of the 256-dimensional embeddings represented in 2 dimensions using the t-SNE dimensionality reduction algorithm. Proximity denotes semantic similarity. Colours denote the patent class, and we see evidence of clustering based on these colours. These patterns highlight how the text and the classes of the patents are connected, which is captured by the embeddings.
 
 #figure(
   [
@@ -131,7 +126,7 @@ I also matched the final set of cited patents to their respective CPC sections. 
 
 == Localisation test
 
-I calculated the geodesic distance between all cited-citing and cited-control pairs using their latitudes and longitudes for the localisation test. However, patents do not have a location, so most previous research constructed one from inventor locations. Since patents have multiple inventors who may work in different parts of the country, I followed #cite(<RN11>, form: "prose")\'s procedure to construct them.
+ For the localisation test, I calculated the geodesic distance between all cited-citing and cited-control pairs using their latitudes and longitudes. However, patents do not have a location, so most previous research constructed one from inventor locations. Since patents have multiple inventors who may work in different parts of the country, I followed #cite(<RN11>, form: "prose")\'s procedure to construct them.
 
 First, I selected areas where the most inventors live for each patent. If this location was not unique, I selected the one corresponding to the lowest inventor sequence within the restricted set. The inventor sequence variable lists the order in which the patent lists its inventors. Generally, the first inventor has contributed the most to the invention, and the order between the others matters less. Therefore, the second step should capture the location that contributed the most or at least be random.
 
@@ -144,7 +139,7 @@ First, I selected areas where the most inventors live for each patent. If this l
       #set text(10pt)
       #set align(left)
       #set par(leading: 0em, justify: false)
-      Notes: The figure shows the spatial distribution of all patents in the matched sample in 100 hexagonal bins. The colours are in the log scale. I determine patent location first by selecting the most common inventor locations and then by selecting the location with the lowest inventor sequence. I only consider locations in the US.]
+      Notes: The figure shows the spatial distribution of all patents in the matched sample in 100 hexagonal bins. The colours are in log scale. I determine patent location first by selecting the most common inventor locations and then by selecting the location with the lowest inventor sequence. I only consider locations in the US.]
   ],
   caption: [
     #set text(size: 10pt)
@@ -152,21 +147,76 @@ First, I selected areas where the most inventors live for each patent. If this l
   ]
 ) <figure2>
 
-Using a Gaussian kernel, I estimated the density $hat(K)(d)$ for each draw, where $d$ is the distance. Using the Sheather and Jones (1991, CITE) method, I selected bandwidths. Hence, for each distance $d$ the, the density $hat(K)(d)$ is
+For each random draw, I estimated the density $hat(K)(d)$, where $d$ is the distance, with a Gaussian kernel. I selected bandwidths using the #cite(<RN50>, form: "prose") method. Formally, for each distance $d$ the, the density $hat(K)(d)$ is
 
 $ hat(K)(d) = 1 / (2 h N) sum_(i=1)^(n) sum_(j=1)^(n^i) f((d - d_(i, j)) / h), $
 
-where, for each subsample, $n$ is the number of cited patents, $n^i$ the number of citing patents for cited patent $i$, and $N$ the total number of citations for all $i in {1, ..., n}$. Additionally, $h$ is the bandwidth, $f()$ kernel, and $d_(i, j)$ the distances between patents $i$ and $j$.
+where, for each subsample, $n$ is the number of cited patents, $n^i$ the number of citing patents for cited patent $i$, and $N$ is the sum of $n^i$ for all $i in {1, ..., n}$. Additionally, $h$ is the bandwidth, $f()$ kernel, and $d_(i, j)$ the distances between patents $i$ and $j$.
 
-Since the density should be zero for negative distances, we use the reflection method employed by Duranton and Overman (2005, CITE). I estimated the density over an augmented set that included the original distances and minus the original distances, denoted $tilde(K)(d)$. Then, I set $hat(K)(d)=0, space.en forall d < 0$, and $hat(K)(d)=2tilde(K)(d), space.en forall d gt.eq 0$.
+Since the density should be zero for negative distances, we use the reflection method employed by #cite(<RN28>, form: "prose"). I estimated the density, denoted $tilde(K)(d)$, over an augmented set that included the original distances and minus the original distances. Then, I set $hat(K)(d)=0, space forall d < 0$, and $hat(K)(d)=2tilde(K)(d), space forall d gt.eq 0$.
 
-I create the local confidence intervals by selecting the 95th and 5th quantiles over the densities from the 1,000 random control draws at each distance. These quantiles are the lower confidence interval $underline(K)(d)$ and the upper confidence interval $overline(K)(d)$. If $hat(K)(d) gt.eq overline(K)(d)$, we say this subsample shows localisation at distance $d$. Conversely, if $hat(K)(d) lt.eq underline(K)(d)$, we say this subsample shows dispersion at distance $d$.
+I create the local confidence intervals by selecting the 95th and 5th quantiles over the densities at each distance from the 1,000 random control draws. These quantiles are the lower confidence interval $underline(K)(d)$ and the upper confidence interval $overline(K)(d)$. If $hat(K)(d) gt.eq overline(K)(d)$, we say this subsample shows localisation at distance $d$. Conversely, if $hat(K)(d) lt.eq underline(K)(d)$, we say this subsample shows dispersion at distance $d$.
 
-The local tests have two issues. First, dispersion and location at a distance generally imply the converse at a separate distance. Second, we are conducting multiple hypothesis tests by considering all distances. Hence, we construct global confidence intervals so that only 5% of simulated densities will cross these intervals, with the probability constant across all distances. We denote these bands $overline(overline(K))(d)$ and $underline(underline(K))(d)$. A subsample displays global localisation if $hat(K)(d) gt.eq overline(overline(K))(d)$ for at least one $d$.
+The local tests have two issues. First, dispersion and location at a distance generally imply the converse at a separate distance. Second, we are conducting multiple hypothesis tests by considering all distances. Hence, we construct global confidence intervals so that only 5% of simulated densities will cross these intervals, with the probability constant across all distances. We denote these bands $overline(overline(K))(d)$ and $underline(underline(K))(d)$. A subsample displays global localisation if $hat(K)(d) gt.eq overline(overline(K))(d)$ for at least one $d$ and global dispersion if $hat(K)(d) lt.eq underline(underline(K))(d)$ for at least one $d$.
 
 = Results <section4>
 
+#link(<figure3>)[Figure 3] shows the results of the localisation test for the full sample. The line in the middle is the estimated density, with the shaded band representing the local confidence intervals and the dashed lines the global confidence intervals. The most striking feature is that there is a significant spike at zero. This spike is higher than the local and global bands, which indicates localisation in the patent citations. We also see local dispersion at specific distances but no evidence of global dispersion.
+
+#figure(
+  [
+    #image("figure3.png")
+    #block(width: 95%)[
+      #set text(10pt)
+      #set align(left)
+      #set par(leading: 0em, justify: false)
+      Notes: I estimated densities with a Gaussian kernel and selected bandwidths with #cite(<RN50>, form: "prose") method. The shaded area represents local confidence intervals, and the dashed line represents global confidence intervals. I estimate these intervals through a Monte Carlo simulation with 1,000 draws.]
+  ],
+  caption: [
+    #set text(size: 10pt)
+    Localisation test results for the complete sample
+  ]
+) <figure3>
+
+
+The spike is consistent with previous evidence indicating that benefits from knowledge spillovers decay very quickly. The data itself had many patents at the same OSMNames place, the lowest level of aggregation, corresponding to a distance of zero. This pattern indicates that a potential avenue for research would be to study these spillovers with extremely disaggregated data at short distances, offering more precise insights into how they operate.
+
+#link(<table3>)[Table 3] shows the global test results for the complete sample and each CPC section. All CPC sections show localisation results, i.e., the density crosses the global bands at least once. Some classes also show evidence of dispersion. However, if localisation is very strong, it can imply dispersion since the density must sum to one. Hence. #cite(<RN28>, form: "prose") only consider industries with dispersion and no localisation as truly dispersed.
+
+#figure(image("table3.png"), kind: table) <table3>
+
+#link(<figure4>)[Figure 4] shows the localisation test densities for each CPC section. The patterns are similar to those of the full sample. Generally, there is a spike around zero in the density estimates. There also tends to be localisation between 500km and 1000km for most classes. This distance could correspond to the modal bilateral distance of clusters in the #cite(<RN11>, form: "prose")\'s model, excluding direct interactions.
+
+For this latter point, we expect a smoother distribution within the agglomeration cluster area followed by significant dispersion. However, this unconditional distribution pattern (i.e., a separate spike) might reflect the underlying characteristics of inventor location choices—for example, the distance between two very important cities within clusters. The matching approach would control for these patterns.
+
+One interesting point is that previous papers used Silverman's rule of thumb to select bandwidths. It requires stronger assumptions about the data, but it is easier to compute. However, when I tested these bandwidths, the data was over-smoothed compared to when using #cite(<RN50>, form: "prose"). This smoothing hid the second peak between 500km and 1000km, which provides an interesting link to the conceptual framework I used.
+
+
+
+#figure(
+  [
+    #image("figure4.png")
+    #block(width: 95%)[
+      #set text(10pt)
+      #set align(left)
+      #set par(leading: 0em, justify: false)
+      Notes: I estimated densities with a Gaussian kernel and selected bandwidths with #cite(<RN50>, form: "prose") method. The shaded area represents local confidence intervals, and the dashed line represents global confidence intervals. I estimate these intervals through a Monte Carlo simulation with 1,000 draws. CPC section D was excluded from the data since it had too few observations.]
+  ],
+  caption: [
+    #set text(size: 10pt)
+    Localisation test results for CPC classes
+  ]
+) <figure4>
+
 = Conclusion <section5>
+
+These results show evidence of global localisation in knowledge spillovers. The observed patterns are consistent with previous research in the area. In particular, the benefits from knowledge spillovers decay quickly. My main contribution was to use an alternative matching procedure for the empirical strategy first developed by #cite(<RN1>, form: "prose") with less biased localisation tests. Other papers using text analysis in this context only treated the localisation tests as a secondary concern, so they focused on discrete measures. #cite(<RN2>, form: "prose") created the adaptation of the #cite(<RN28>, form: "prose") test which I use here.
+
+Several techniques could have further improved performance within the patent similarity approach. The leading method would be fine-tuning pre-trained models on patent texts or using domain-specific models. Although these incur additional computing and time requirements, #cite(<RN9>, form: "prose") results show that this could create significant improvements. I could also have applied these models with other pieces of text in the patent, particularly their claims. However, this data is not yet fully available at PatentsView.
+
+The latter is particularly interesting for future research since we could create even higher-dimensional datasets with patent information that can be easily analysed. Not only can the full patent text be encoded, but multimodal embedding models also work with images of inventions. This additional data might be better incorporated with newer matching approaches, which can create balanced samples in a data-driven way.
+
+Finally, other dimensions of knowledge spillovers can still be explored within this framework. In particular, with more computation power, we could use larger samples to study more detailed classes and variations in the level of localisation across time. The nature of the process underlying inventions is changing, and this data can help uncover these changes. The text approach is particularly important in this context since it can easily be matched with external data, such as from basic research or final outputs of the invention process.
 
 #pagebreak()
 
